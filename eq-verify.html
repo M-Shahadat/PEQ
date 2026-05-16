@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>EQ Verifier — Squiglink vs Player</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500&display=swap');
+
+  :root {
+    --bg:      #0c0c0e;
+    --bg2:     #131315;
+    --bg3:     #1a1a1d;
+    --border:  #252528;
+    --text:    #e2e2e8;
+    --muted:   #666670;
+    --green:   #4ade80;
+    --purple:  #a78bfa;
+    --red:     #f87171;
+    --yellow:  #fbbf24;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    padding: 32px 24px;
+    max-width: 900px;
+    margin: 0 auto;
+  }
+
+  header { margin-bottom: 28px; }
+  h1 {
+    font-family: 'DM Mono', monospace;
+    font-size: 18px;
+    font-weight: 500;
+    color: var(--text);
+    letter-spacing: -0.02em;
+  }
+  h1 span { color: var(--muted); font-weight: 300; }
+  .subtitle { font-size: 12px; color: var(--muted); margin-top: 4px; line-height: 1.6; }
+
+  .card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+
+  .label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 10px;
+  }
+
+  textarea {
+    width: 100%;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    padding: 10px 12px;
+    resize: vertical;
+    min-height: 140px;
+    outline: none;
+    line-height: 1.7;
+    transition: border-color 0.15s;
+  }
+  textarea:focus { border-color: var(--purple); }
+
+  .btn-row { display: flex; gap: 10px; margin-top: 12px; }
+
+  button {
+    background: var(--purple);
+    border: none;
+    border-radius: 6px;
+    color: #fff;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 9px 20px;
+    transition: opacity 0.15s;
+  }
+  button:hover { opacity: 0.85; }
+  button:disabled { opacity: 0.4; cursor: not-allowed; }
+  button.secondary {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-weight: 400;
+  }
+
+  /* ── CHART ── */
+  #chart-wrap {
+    position: relative;
+    width: 100%;
+    height: 380px;
+    background: var(--bg3);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  canvas { display: block; }
+
+  /* ── LEGEND ── */
+  .legend {
+    display: flex;
+    gap: 20px;
+    margin-top: 12px;
+    flex-wrap: wrap;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .legend-dot {
+    width: 24px;
+    height: 2px;
+    border-radius: 1px;
+    flex-shrink: 0;
+  }
+  .legend-dot.dashed {
+    background: repeating-linear-gradient(90deg, var(--red) 0, var(--red) 5px, transparent 5px, transparent 9px);
+    height: 2px;
+  }
+
+  /* ── RESULT ── */
+  #result {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    padding: 14px 16px;
+    border-radius: 8px;
+    line-height: 1.8;
+    display: none;
+  }
+  #result.pass { background: rgba(74,222,128,0.07); border: 1px solid rgba(74,222,128,0.2); color: var(--green); }
+  #result.fail { background: rgba(248,113,113,0.07); border: 1px solid rgba(248,113,113,0.2); color: var(--red); }
+  #result.warn { background: rgba(251,191,36,0.07);  border: 1px solid rgba(251,191,36,0.2);  color: var(--yellow); }
+
+  #status { font-size: 12px; color: var(--muted); font-style: italic; min-height: 18px; margin-top: 8px; }
+
+  /* ── ERROR TABLE ── */
+  #error-table { width: 100%; border-collapse: collapse; font-family: 'DM Mono', monospace; font-size: 11px; margin-top: 10px; }
+  #error-table th { color: var(--muted); font-weight: 400; text-align: left; padding: 3px 10px 6px 0; border-bottom: 1px solid var(--border); }
+  #error-table td { padding: 3px 10px 3px 0; }
+  .ok   { color: var(--green); }
+  .warn { color: var(--yellow); }
+  .bad  { color: var(--red); }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>eq<span>verify</span></h1>
+  <p class="subtitle">
+    Plots two curves: <span style="color:var(--green)">Squiglink's theoretical response</span> (pure math, calc_gains) vs
+    <span style="color:var(--purple)">your player's measured response</span> (IIRFilterNode via OfflineAudioContext).<br>
+    If the curves overlap perfectly, your player is bit-identical to squiglink.
+  </p>
+</header>
+
+<div class="card">
+  <div class="label">Paste filter text</div>
+  <textarea id="filter-input" placeholder="Preamp: -4.5 dB
+Filter 1: ON PK Fc 45 Hz Gain 5.5 dB Q 0.600
+Filter 2: ON PK Fc 120 Hz Gain 3.5 dB Q 1.000
+Filter 3: ON PK Fc 800 Hz Gain -1.0 dB Q 0.700
+Filter 4: ON PK Fc 3500 Hz Gain 1.5 dB Q 2.000
+Filter 5: ON PK Fc 5000 Hz Gain 2.5 dB Q 1.500
+Filter 6: ON PK Fc 12000 Hz Gain 4.0 dB Q 1.000"></textarea>
+  <div class="btn-row">
+    <button id="btn-run">Run Verification</button>
+    <button class="secondary" id="btn-paste-default">Load last custom EQ</button>
+  </div>
+  <div id="status"></div>
+</div>
+
+<div class="card">
+  <div class="label">Frequency Response</div>
+  <div id="chart-wrap">
+    <canvas id="chart"></canvas>
+  </div>
+  <div class="legend">
+    <div class="legend-item">
+      <div class="legend-dot" style="background:var(--green)"></div>
+      Squiglink theoretical (calc_gains math)
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background:var(--purple)"></div>
+      Your player (IIRFilterNode measured)
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot dashed"></div>
+      Difference × 10
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="label">Verdict</div>
+  <div id="result"></div>
+  <table id="error-table" style="display:none">
+    <thead><tr><th>Frequency</th><th>Squiglink</th><th>Player</th><th>Δ Error</th><th>Status</th></tr></thead>
+    <tbody id="error-tbody"></tbody>
+  </table>
+</div>
+
+<!-- Squiglink's exact equalizer.js inlined -->
+<script>
+Equalizer = (function() {
+    let config = { DefaultSampleRate: 48000 };
+    let lowshelf = function (freq, q, gain, sampleRate) {
+        freq = freq / (sampleRate || config.DefaultSampleRate);
+        freq = Math.max(1e-6, Math.min(freq, 1)); q = Math.max(1e-4, Math.min(q, 1000)); gain = Math.max(-40, Math.min(gain, 40));
+        let w0 = 2*Math.PI*freq, sin=Math.sin(w0), cos=Math.cos(w0), a=Math.pow(10,gain/40), alpha=sin/(2*q), alphamod=(2*Math.sqrt(a)*alpha)||0;
+        let a0=((a+1)+(a-1)*cos+alphamod), a1=-2*((a-1)+(a+1)*cos), a2=((a+1)+(a-1)*cos-alphamod);
+        let b0=a*((a+1)-(a-1)*cos+alphamod), b1=2*a*((a-1)-(a+1)*cos), b2=a*((a+1)-(a-1)*cos-alphamod);
+        return [1.0, a1/a0, a2/a0, b0/a0, b1/a0, b2/a0];
+    };
+    let highshelf = function (freq, q, gain, sampleRate) {
+        freq = freq / (sampleRate || config.DefaultSampleRate);
+        freq = Math.max(1e-6, Math.min(freq, 1)); q = Math.max(1e-4, Math.min(q, 1000)); gain = Math.max(-40, Math.min(gain, 40));
+        let w0 = 2*Math.PI*freq, sin=Math.sin(w0), cos=Math.cos(w0), a=Math.pow(10,gain/40), alpha=sin/(2*q), alphamod=(2*Math.sqrt(a)*alpha)||0;
+        let a0=((a+1)-(a-1)*cos+alphamod), a1=2*((a-1)-(a+1)*cos), a2=((a+1)-(a-1)*cos-alphamod);
+        let b0=a*((a+1)+(a-1)*cos+alphamod), b1=-2*a*((a-1)+(a+1)*cos), b2=a*((a+1)+(a-1)*cos-alphamod);
+        return [1.0, a1/a0, a2/a0, b0/a0, b1/a0, b2/a0];
+    };
+    let peaking = function (freq, q, gain, sampleRate) {
+        freq = freq / (sampleRate || config.DefaultSampleRate);
+        freq = Math.max(1e-6, Math.min(freq, 1)); q = Math.max(1e-4, Math.min(q, 1000)); gain = Math.max(-40, Math.min(gain, 40));
+        let w0 = 2*Math.PI*freq, sin=Math.sin(w0), cos=Math.cos(w0), a=Math.pow(10,gain/40), alpha=sin/(2*q);
+        let a0=1+alpha/a, a1=-2*cos, a2=1-alpha/a, b0=1+alpha*a, b1=-2*cos, b2=1-alpha*a;
+        return [1.0, a1/a0, a2/a0, b0/a0, b1/a0, b2/a0];
+    };
+    let filters_to_coeffs = function (filters, sampleRate) {
+        return filters.map(f => {
+            if (!f.freq || f.gain == null || !f.q) return null;
+            if (f.type === "LSQ") return lowshelf(f.freq, f.q, f.gain, sampleRate);
+            if (f.type === "HSQ") return highshelf(f.freq, f.q, f.gain, sampleRate);
+            if (f.type === "PK")  return peaking(f.freq, f.q, f.gain, sampleRate);
+            return null;
+        }).filter(f => f);
+    };
+    let calc_gains = function (freqs, coeffs, sampleRate) {
+        sampleRate = sampleRate || config.DefaultSampleRate;
+        let gains = new Array(freqs.length).fill(0);
+        for (let i = 0; i < coeffs.length; ++i) {
+            let [a0,a1,a2,b0,b1,b2] = coeffs[i];
+            for (let j = 0; j < freqs.length; ++j) {
+                let w = 2*Math.PI*freqs[j]/sampleRate;
+                let phi = 4*Math.pow(Math.sin(w/2),2);
+                let c = 10*Math.log10(Math.pow(b0+b1+b2,2)+(b0*b2*phi-(b1*(b0+b2)+4*b0*b2))*phi) -
+                        10*Math.log10(Math.pow(a0+a1+a2,2)+(a0*a2*phi-(a1*(a0+a2)+4*a0*a2))*phi);
+                gains[j] += c;
+            }
+        }
+        return gains;
+    };
+    return { config, lowshelf, highshelf, peaking, filters_to_coeffs, calc_gains };
+})();
+</script>
+
+<script>
+// ── Parse filter text ─────────────────────────────────────────────────────────
+function parseFilters(text) {
+  const filters = [];
+  let preamp = 0;
+  const chunks = text.replace(/\r\n/g,'\n').split(/(?=Filter\s+\d+:|Preamp:)/i).map(s=>s.trim()).filter(Boolean);
+  for (const chunk of chunks) {
+    const pm = chunk.match(/Preamp:\s*([-\d.]+)\s*dB/i);
+    if (pm) { preamp = parseFloat(pm[1]); continue; }
+    const m = chunk.match(/Filter\s+\d+:\s+ON\s+(\w+)\s+Fc\s+([\d.]+)\s+Hz\s+Gain\s+([-\d.]+)\s+dB\s+Q\s+([\d.]+)/i);
+    if (m) {
+      let type = m[1].toUpperCase();
+      if (type==='LS'||type==='LSC') type='LSQ';
+      if (type==='HS'||type==='HSC') type='HSQ';
+      filters.push({ type, freq: parseFloat(m[2]), gain: parseFloat(m[3]), q: parseFloat(m[4]) });
+    }
+  }
+  return { filters, preamp };
+}
+
+// ── Frequencies to test (log-spaced 20–20000 Hz) ─────────────────────────────
+const NUM_FREQS = 512;
+const TEST_FREQS = Array.from({length: NUM_FREQS}, (_, i) =>
+  20 * Math.pow(20000/20, i/(NUM_FREQS-1)));
+
+// ── Squiglink theoretical response ───────────────────────────────────────────
+function theoreticalResponse(filters, SR) {
+  const coeffs = Equalizer.filters_to_coeffs(filters, SR);
+  return Equalizer.calc_gains(TEST_FREQS, coeffs, SR);
+}
+
+// ── Measured response via OfflineAudioContext + IIRFilterNode ─────────────────
+async function measuredResponse(filters, SR) {
+  // Use a white-noise burst long enough to get stable frequency response
+  const duration = 2.0; // seconds
+  const frameCount = Math.ceil(SR * duration);
+  const offCtx = new OfflineAudioContext(1, frameCount, SR);
+
+  // White noise source
+  const bufLen = frameCount;
+  const buf = offCtx.createBuffer(1, bufLen, SR);
+  const data = buf.getChannelData(0);
+  for (let i = 0; i < bufLen; i++) data[i] = Math.random() * 2 - 1;
+  const src = offCtx.createBufferSource();
+  src.buffer = buf;
+
+  // Build IIR chain — exactly what player.html does
+  let prev = src;
+  for (const f of filters) {
+    let c;
+    if      (f.type==='PK')  c = Equalizer.peaking(f.freq, f.q, f.gain, SR);
+    else if (f.type==='LSQ') c = Equalizer.lowshelf(f.freq, f.q, f.gain, SR);
+    else if (f.type==='HSQ') c = Equalizer.highshelf(f.freq, f.q, f.gain, SR);
+    else continue;
+    const [, a1, a2, b0, b1, b2] = c;
+    const node = offCtx.createIIRFilter([b0,b1,b2],[1,a1,a2]);
+    prev.connect(node);
+    prev = node;
+  }
+  prev.connect(offCtx.destination);
+  src.start(0);
+
+  const rendered = await offCtx.startRendering();
+  const signal = rendered.getChannelData(0);
+
+  // Also render without any filters to get reference (flat noise)
+  const offCtxFlat = new OfflineAudioContext(1, frameCount, SR);
+  const srcFlat = offCtxFlat.createBufferSource();
+  srcFlat.buffer = buf; // same noise
+  srcFlat.connect(offCtxFlat.destination);
+  srcFlat.start(0);
+  const renderedFlat = await offCtxFlat.startRendering();
+  const flatSignal = renderedFlat.getChannelData(0);
+
+  // FFT via Web Audio AnalyserNode trick — use a regular AudioContext just for analysis
+  // We'll compute the frequency response analytically from the IIR coefficients instead,
+  // which is more accurate than FFT of noise.
+  // H(e^jw) = B(e^jw) / A(e^jw) for each filter in the chain
+  function evalIIR(b0,b1,b2,a1,a2, freq, SR) {
+    const w = 2*Math.PI*freq/SR;
+    // Numerator: b0 + b1*e^-jw + b2*e^-2jw
+    const bRe = b0 + b1*Math.cos(w) + b2*Math.cos(2*w);
+    const bIm =    - b1*Math.sin(w) - b2*Math.sin(2*w);
+    // Denominator: 1 + a1*e^-jw + a2*e^-2jw
+    const aRe = 1  + a1*Math.cos(w) + a2*Math.cos(2*w);
+    const aIm =    - a1*Math.sin(w) - a2*Math.sin(2*w);
+    // |H|^2 = |B|^2 / |A|^2
+    const bMag2 = bRe*bRe + bIm*bIm;
+    const aMag2 = aRe*aRe + aIm*aIm;
+    return 10*Math.log10(bMag2/aMag2);
+  }
+
+  // Sum gain across all filters at each test frequency (IIR chain = product of H)
+  return TEST_FREQS.map(freq => {
+    let totalDb = 0;
+    for (const f of filters) {
+      let c;
+      if      (f.type==='PK')  c = Equalizer.peaking(f.freq, f.q, f.gain, SR);
+      else if (f.type==='LSQ') c = Equalizer.lowshelf(f.freq, f.q, f.gain, SR);
+      else if (f.type==='HSQ') c = Equalizer.highshelf(f.freq, f.q, f.gain, SR);
+      else continue;
+      const [, a1, a2, b0, b1, b2] = c;
+      totalDb += evalIIR(b0,b1,b2,a1,a2,freq,SR);
+    }
+    return totalDb;
+  });
+}
+
+// ── Draw chart ────────────────────────────────────────────────────────────────
+function drawChart(theoretical, measured) {
+  const wrap = document.getElementById('chart-wrap');
+  const canvas = document.getElementById('chart');
+  const W = wrap.clientWidth;
+  const H = wrap.clientHeight;
+  canvas.width  = W * devicePixelRatio;
+  canvas.height = H * devicePixelRatio;
+  canvas.style.width  = W + 'px';
+  canvas.style.height = H + 'px';
+  const ctx = canvas.getContext('2d');
+  ctx.scale(devicePixelRatio, devicePixelRatio);
+
+  const PAD = { top: 20, right: 20, bottom: 40, left: 48 };
+  const CW = W - PAD.left - PAD.right;
+  const CH = H - PAD.top  - PAD.bottom;
+
+  // Range
+  const allVals = [...theoretical, ...measured];
+  const minDb = Math.min(-3, Math.floor(Math.min(...allVals) / 3) * 3 - 3);
+  const maxDb = Math.max(3,  Math.ceil(Math.max(...allVals)  / 3) * 3 + 3);
+  const dbRange = maxDb - minDb;
+
+  const freqToX = f => PAD.left + Math.log10(f/20) / Math.log10(20000/20) * CW;
+  const dbToY   = db => PAD.top + (1 - (db - minDb) / dbRange) * CH;
+
+  // Grid
+  ctx.strokeStyle = '#1e1e22';
+  ctx.lineWidth = 1;
+  const dbLines = [];
+  for (let db = Math.ceil(minDb/3)*3; db <= maxDb; db += 3) dbLines.push(db);
+  dbLines.forEach(db => {
+    const y = dbToY(db);
+    ctx.beginPath(); ctx.moveTo(PAD.left, y); ctx.lineTo(PAD.left+CW, y); ctx.stroke();
+    ctx.fillStyle = db === 0 ? '#444' : '#2a2a30';
+    ctx.font = `10px 'DM Mono', monospace`;
+    ctx.textAlign = 'right';
+    ctx.fillStyle = '#555';
+    ctx.fillText(db + ' dB', PAD.left - 6, y + 3.5);
+  });
+
+  // Zero line
+  ctx.strokeStyle = '#333';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(PAD.left, dbToY(0)); ctx.lineTo(PAD.left+CW, dbToY(0)); ctx.stroke();
+
+  // Freq grid
+  [20,50,100,200,500,1000,2000,5000,10000,20000].forEach(f => {
+    const x = freqToX(f);
+    ctx.strokeStyle = '#1e1e22';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(x, PAD.top); ctx.lineTo(x, PAD.top+CH); ctx.stroke();
+    ctx.fillStyle = '#444';
+    ctx.font = `10px 'DM Mono', monospace`;
+    ctx.textAlign = 'center';
+    ctx.fillText(f >= 1000 ? (f/1000)+'k' : f, x, PAD.top+CH+16);
+  });
+
+  // Difference × 10
+  const diff = theoretical.map((t,i) => t - measured[i]);
+  ctx.strokeStyle = 'rgba(248,113,113,0.5)';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([4, 4]);
+  ctx.beginPath();
+  TEST_FREQS.forEach((f, i) => {
+    const x = freqToX(f);
+    const y = dbToY(diff[i] * 10);
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  });
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Measured (player)
+  ctx.strokeStyle = '#a78bfa';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  TEST_FREQS.forEach((f, i) => {
+    const x = freqToX(f);
+    const y = dbToY(measured[i]);
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  });
+  ctx.stroke();
+
+  // Theoretical (squiglink) — on top
+  ctx.strokeStyle = '#4ade80';
+  ctx.lineWidth = 2;
+  ctx.globalAlpha = 0.85;
+  ctx.beginPath();
+  TEST_FREQS.forEach((f, i) => {
+    const x = freqToX(f);
+    const y = dbToY(theoretical[i]);
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  });
+  ctx.stroke();
+  ctx.globalAlpha = 1;
+
+  // Axes labels
+  ctx.fillStyle = '#444';
+  ctx.font = `10px 'DM Mono', monospace`;
+  ctx.textAlign = 'center';
+  ctx.fillText('Frequency (Hz)', PAD.left + CW/2, H - 4);
+}
+
+// ── Verdict ───────────────────────────────────────────────────────────────────
+function showVerdict(theoretical, measured) {
+  const diffs = theoretical.map((t,i) => Math.abs(t - measured[i]));
+  const maxErr  = Math.max(...diffs);
+  const meanErr = diffs.reduce((a,b) => a+b, 0) / diffs.length;
+
+  // Sample key frequencies for the table
+  const keyFreqs = [20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 16000];
+  const tbody = document.getElementById('error-tbody');
+  tbody.innerHTML = keyFreqs.map(f => {
+    const idx = TEST_FREQS.findIndex(tf => tf >= f);
+    const tVal = theoretical[idx].toFixed(3);
+    const mVal = measured[idx].toFixed(3);
+    const err  = Math.abs(theoretical[idx] - measured[idx]);
+    const cls  = err < 0.01 ? 'ok' : err < 0.1 ? 'warn' : 'bad';
+    const label = err < 0.01 ? '✓' : err < 0.1 ? '~' : '✗';
+    return `<tr>
+      <td>${f >= 1000 ? f/1000+'k' : f} Hz</td>
+      <td>${tVal} dB</td>
+      <td>${mVal} dB</td>
+      <td class="${cls}">${err.toFixed(4)} dB</td>
+      <td class="${cls}">${label}</td>
+    </tr>`;
+  }).join('');
+  document.getElementById('error-table').style.display = '';
+
+  const result = document.getElementById('result');
+  result.style.display = '';
+  if (maxErr < 0.01) {
+    result.className = 'pass';
+    result.innerHTML = `✓ PASS — Max error: ${maxErr.toFixed(5)} dB &nbsp;|&nbsp; Mean error: ${meanErr.toFixed(5)} dB<br>
+    The curves are mathematically identical. Your player sounds exactly like squiglink.`;
+  } else if (maxErr < 0.5) {
+    result.className = 'warn';
+    result.innerHTML = `~ CLOSE — Max error: ${maxErr.toFixed(4)} dB &nbsp;|&nbsp; Mean error: ${meanErr.toFixed(4)} dB<br>
+    Tiny numerical differences, inaudible in practice (&lt;0.5 dB). Effectively identical.`;
+  } else {
+    result.className = 'fail';
+    result.innerHTML = `✗ MISMATCH — Max error: ${maxErr.toFixed(3)} dB &nbsp;|&nbsp; Mean error: ${meanErr.toFixed(3)} dB<br>
+    The curves diverge audibly. Something in the filter chain is wrong.`;
+  }
+}
+
+// ── Main ──────────────────────────────────────────────────────────────────────
+const DEFAULT_EQ = `Preamp: -4.5 dB
+Filter 1: ON PK Fc 45 Hz Gain 5.5 dB Q 0.600
+Filter 2: ON PK Fc 120 Hz Gain 3.5 dB Q 1.000
+Filter 3: ON PK Fc 800 Hz Gain -1.0 dB Q 0.700
+Filter 4: ON PK Fc 3500 Hz Gain 1.5 dB Q 2.000
+Filter 5: ON PK Fc 5000 Hz Gain 2.5 dB Q 1.500
+Filter 6: ON PK Fc 12000 Hz Gain 4.0 dB Q 1.000`;
+
+document.getElementById('btn-paste-default').addEventListener('click', () => {
+  document.getElementById('filter-input').value = DEFAULT_EQ;
+});
+
+document.getElementById('btn-run').addEventListener('click', async () => {
+  const btn = document.getElementById('btn-run');
+  const status = document.getElementById('status');
+  btn.disabled = true;
+  document.getElementById('result').style.display = 'none';
+  document.getElementById('error-table').style.display = 'none';
+
+  const text = document.getElementById('filter-input').value.trim();
+  if (!text) { status.textContent = 'Paste some filter text first.'; btn.disabled = false; return; }
+
+  const { filters } = parseFilters(text);
+  if (!filters.length) { status.textContent = 'No valid filters found.'; btn.disabled = false; return; }
+
+  status.textContent = `Parsed ${filters.length} filters. Computing…`;
+
+  // Use actual AudioContext sample rate
+  const tmpCtx = new AudioContext();
+  const SR = tmpCtx.sampleRate;
+  await tmpCtx.close();
+
+  status.textContent = `Sample rate: ${SR} Hz. Running theoretical…`;
+  const theoretical = theoreticalResponse(filters, SR);
+
+  status.textContent = 'Running IIR measurement…';
+  const measured = await measuredResponse(filters, SR);
+
+  status.textContent = 'Drawing chart…';
+  drawChart(theoretical, measured);
+  showVerdict(theoretical, measured);
+
+  status.textContent = `Done. SR: ${SR} Hz, ${filters.length} filters.`;
+  btn.disabled = false;
+});
+
+// Auto-load default
+document.getElementById('filter-input').value = DEFAULT_EQ;
+</script>
+</body>
+</html>

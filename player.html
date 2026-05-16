@@ -1,0 +1,999 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Squiglink Player</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=DM+Sans:wght@300;400;500;600&display=swap');
+
+  :root {
+    --bg:        #0f0f10;
+    --bg2:       #161618;
+    --bg3:       #1e1e21;
+    --bg4:       #252529;
+    --border:    #2a2a30;
+    --accent:    #7c6af7;
+    --accent2:   #a89ff9;
+    --text:      #e8e8ec;
+    --muted:     #7a7a85;
+    --danger:    #f76a6a;
+    --green:     #6af7a0;
+    --sidebar-w: 300px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── TOP BAR ─────────────────────────────────── */
+  #topbar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 16px;
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+    z-index: 10;
+  }
+  #topbar .logo {
+    font-family: 'DM Mono', monospace;
+    font-weight: 500;
+    font-size: 14px;
+    color: var(--accent2);
+    letter-spacing: -0.02em;
+    white-space: nowrap;
+  }
+  #topbar .logo span { color: var(--muted); font-weight: 300; }
+
+  #now-playing-bar {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+  #np-title {
+    font-weight: 500;
+    font-size: 13px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  #np-folder {
+    font-size: 11px;
+    color: var(--muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-family: 'DM Mono', monospace;
+  }
+
+  /* transport controls */
+  #transport {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+  .t-btn {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    cursor: pointer;
+    padding: 5px 10px;
+    font-size: 13px;
+    transition: background 0.15s;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .t-btn:hover { background: var(--bg4); }
+  .t-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+  /* progress */
+  #progress-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 16px 8px;
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  #progress-bar-outer {
+    flex: 1;
+    height: 4px;
+    background: var(--bg4);
+    border-radius: 2px;
+    cursor: pointer;
+    position: relative;
+  }
+  #progress-bar-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 2px;
+    width: 0%;
+    pointer-events: none;
+    transition: width 0.1s linear;
+  }
+  #time-cur, #time-tot {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+  #vol-wrap { display: flex; align-items: center; gap: 6px; }
+  #vol-icon { font-size: 13px; color: var(--muted); }
+  #vol-slider {
+    -webkit-appearance: none; appearance: none;
+    width: 70px; height: 3px;
+    background: var(--bg4);
+    border-radius: 2px;
+    outline: none;
+    cursor: pointer;
+  }
+  #vol-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: var(--accent2);
+    cursor: pointer;
+  }
+
+  /* ── MAIN ────────────────────────────────────── */
+  #main {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  /* ── SIDEBAR ─────────────────────────────────── */
+  #sidebar {
+    width: var(--sidebar-w);
+    min-width: var(--sidebar-w);
+    background: var(--bg2);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  #search-wrap {
+    padding: 10px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  #search {
+    width: 100%;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    padding: 6px 10px;
+    font-size: 12px;
+    font-family: 'DM Sans', sans-serif;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  #search:focus { border-color: var(--accent); }
+  #search::placeholder { color: var(--muted); }
+
+  #library {
+    flex: 1;
+    overflow-y: auto;
+    padding: 4px 0;
+  }
+  #library::-webkit-scrollbar { width: 4px; }
+  #library::-webkit-scrollbar-track { background: transparent; }
+  #library::-webkit-scrollbar-thumb { background: var(--bg4); border-radius: 2px; }
+
+  .lib-folder {
+    padding: 6px 12px 2px;
+    font-size: 10px;
+    font-family: 'DM Mono', monospace;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    border-top: 1px solid var(--border);
+    margin-top: 4px;
+  }
+  .lib-folder:first-child { border-top: none; margin-top: 0; }
+
+  .lib-track {
+    padding: 6px 14px;
+    cursor: pointer;
+    font-size: 12px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    border-radius: 4px;
+    margin: 1px 4px;
+    color: var(--text);
+    transition: background 0.1s;
+  }
+  .lib-track:hover { background: var(--bg3); }
+  .lib-track.playing {
+    background: rgba(124,106,247,0.18);
+    color: var(--accent2);
+    font-weight: 500;
+  }
+
+  #lib-status {
+    padding: 20px;
+    color: var(--muted);
+    font-size: 12px;
+    text-align: center;
+  }
+
+  /* ── EQ PANEL ────────────────────────────────── */
+  #eq-panel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    padding: 20px;
+    gap: 16px;
+    overflow-y: auto;
+  }
+
+  .section-label {
+    font-size: 10px;
+    font-family: 'DM Mono', monospace;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 6px;
+  }
+
+  /* EQ status pill */
+  #eq-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 4px 12px;
+    font-size: 12px;
+    font-family: 'DM Mono', monospace;
+  }
+  .dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--muted);
+  }
+  .dot.active { background: var(--green); box-shadow: 0 0 6px var(--green); }
+  .dot.computing { background: var(--accent); animation: pulse 0.8s ease-in-out infinite; }
+
+  @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.3; } }
+
+  /* IEM selector */
+  #iem-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  #iem-input {
+    flex: 1;
+    min-width: 180px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    padding: 7px 10px;
+    font-size: 12px;
+    font-family: 'DM Sans', sans-serif;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  #iem-input:focus { border-color: var(--accent); }
+  #iem-input::placeholder { color: var(--muted); }
+
+  .btn {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    cursor: pointer;
+    padding: 7px 14px;
+    font-size: 12px;
+    font-family: 'DM Sans', sans-serif;
+    white-space: nowrap;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .btn:hover { background: var(--bg4); }
+  .btn.primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+    font-weight: 500;
+  }
+  .btn.primary:hover { background: var(--accent2); border-color: var(--accent2); }
+  .btn.danger { border-color: var(--danger); color: var(--danger); }
+  .btn.danger:hover { background: rgba(247,106,106,0.1); }
+
+  /* Target selector */
+  #target-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  #target-select {
+    flex: 1;
+    min-width: 160px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    padding: 7px 10px;
+    font-size: 12px;
+    font-family: 'DM Sans', sans-serif;
+    outline: none;
+    cursor: pointer;
+  }
+  #target-select option { background: var(--bg3); }
+
+  /* Filter bands display */
+  #filters-display {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  #filters-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+  }
+  #filters-table th {
+    color: var(--muted);
+    font-weight: 400;
+    text-align: left;
+    padding: 2px 8px 6px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  #filters-table td {
+    padding: 4px 8px 4px 0;
+    color: var(--text);
+  }
+  #filters-table tr:last-child td { padding-bottom: 0; }
+  .gain-pos { color: var(--green); }
+  .gain-neg { color: var(--danger); }
+
+  /* Preamp */
+  #preamp-row {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: var(--muted);
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+  #preamp-val { color: var(--text); }
+
+  /* EQ toggle */
+  #eq-toggle-row { display: flex; align-items: center; gap: 10px; }
+  .toggle-label { font-size: 12px; color: var(--muted); }
+  #eq-enabled {
+    -webkit-appearance: none; appearance: none;
+    width: 36px; height: 20px;
+    background: var(--bg4);
+    border-radius: 10px;
+    cursor: pointer;
+    position: relative;
+    transition: background 0.2s;
+    flex-shrink: 0;
+  }
+  #eq-enabled:checked { background: var(--accent); }
+  #eq-enabled::after {
+    content: '';
+    position: absolute;
+    top: 3px; left: 3px;
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    background: #fff;
+    transition: left 0.2s;
+  }
+  #eq-enabled:checked::after { left: 19px; }
+
+  #msg { font-size: 12px; color: var(--muted); font-style: italic; min-height: 16px; }
+  #msg.error { color: var(--danger); font-style: normal; }
+  #msg.ok { color: var(--green); font-style: normal; }
+</style>
+</head>
+<body>
+
+<!-- ── TOP BAR ────────────────────────────────────────────── -->
+<div id="topbar">
+  <div class="logo">squig<span>link</span> player</div>
+  <div id="now-playing-bar">
+    <div id="np-title">No track selected</div>
+    <div id="np-folder"></div>
+  </div>
+  <div id="transport">
+    <button class="t-btn" id="btn-prev" title="Previous">⏮</button>
+    <button class="t-btn" id="btn-play" title="Play/Pause">▶</button>
+    <button class="t-btn" id="btn-next" title="Next">⏭</button>
+    <button class="t-btn" id="btn-shuffle" title="Shuffle">⇄</button>
+    <button class="t-btn" id="btn-repeat" title="Repeat">↻</button>
+  </div>
+</div>
+
+<!-- ── PROGRESS ───────────────────────────────────────────── -->
+<div id="progress-wrap">
+  <span id="time-cur">0:00</span>
+  <div id="progress-bar-outer">
+    <div id="progress-bar-fill"></div>
+  </div>
+  <span id="time-tot">0:00</span>
+  <div id="vol-wrap">
+    <span id="vol-icon">🔊</span>
+    <input type="range" id="vol-slider" min="0" max="1.5" step="0.01" value="1">
+  </div>
+</div>
+
+<!-- ── MAIN ───────────────────────────────────────────────── -->
+<div id="main">
+
+  <!-- library sidebar -->
+  <div id="sidebar">
+    <div id="search-wrap">
+      <input id="search" type="text" placeholder="Search library…">
+    </div>
+    <div id="library">
+      <div id="lib-status">Loading library…</div>
+    </div>
+  </div>
+
+  <!-- EQ panel -->
+  <div id="eq-panel">
+    <div>
+      <div class="section-label">Equalizer</div>
+      <div id="eq-toggle-row">
+        <input type="checkbox" id="eq-enabled" checked>
+        <label class="toggle-label" for="eq-enabled">EQ enabled</label>
+        <div id="eq-status"><div class="dot" id="eq-dot"></div><span id="eq-label">idle</span></div>
+      </div>
+    </div>
+
+    <div>
+      <div class="section-label">Target curve</div>
+      <div id="target-row">
+        <select id="target-select">
+          <option value="harman_in-ear_2019v2">Harman In-Ear 2019 v2 (recommended)</option>
+          <option value="harman_in-ear_2017-1">Harman In-Ear 2017</option>
+          <option value="diffuse_field">Diffuse Field</option>
+          <option value="flat">Flat (no target shaping)</option>
+        </select>
+      </div>
+    </div>
+
+    <div>
+      <div class="section-label">IEM / Headphone measurement</div>
+      <div id="iem-row">
+        <input id="iem-input" type="text" placeholder="Paste AutoEQ filter text here…">
+        <button class="btn primary" id="btn-autoeq">Apply AutoEQ</button>
+        <button class="btn danger" id="btn-clear-eq">Clear EQ</button>
+      </div>
+      <div style="margin-top:8px;font-size:11px;color:var(--muted);line-height:1.6">
+        Paste the <strong style="color:var(--text)">Parametric EQ</strong> text from 
+        <a href="https://squig.link" target="_blank" style="color:var(--accent2)">squig.link</a> 
+        or <a href="https://autoeq.app" target="_blank" style="color:var(--accent2)">autoeq.app</a> 
+        — the lines that look like:<br>
+        <code style="color:var(--muted);font-size:10px">Filter 1: ON PK Fc 85 Hz Gain 6.9 dB Q 3.000</code>
+      </div>
+    </div>
+
+    <div id="filters-display" style="display:none">
+      <div class="section-label">Active filters</div>
+      <div id="preamp-row">Preamp: <span id="preamp-val">0.0 dB</span></div>
+      <div style="height:8px"></div>
+      <table id="filters-table">
+        <thead>
+          <tr><th>#</th><th>Type</th><th>Freq</th><th>Q</th><th>Gain</th></tr>
+        </thead>
+        <tbody id="filters-tbody"></tbody>
+      </table>
+    </div>
+
+    <div id="msg"></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     EQUALIZER.JS  (Squiglink's own biquad engine, inlined)
+     ══════════════════════════════════════════════════════════════ -->
+<script>
+/*
+ Biquad algorithms taken from:
+ https://github.com/jaakkopasanen/AutoEq/blob/master/biquad.py
+ https://github.com/mohayonao/biquad-coeffs/tree/master/packages/biquad-coeffs-cookbook
+*/
+Equalizer = (function() {
+    let config = {
+        DefaultSampleRate: 48000,
+        TrebleStartFrom: 7000,
+        AutoEQRange: [20, 15000],
+        OptimizeQRange: [0.5, 2],
+        OptimizeGainRange: [-12, 12],
+        OptimizeDeltas: [
+            [10, 10, 10, 5, 0.1, 0.5],
+            [10, 10, 10, 2, 0.1, 0.2],
+            [10, 10, 10, 1, 0.1, 0.1],
+        ],
+        GraphicEQRawFrequences: (
+            new Array(Math.ceil(Math.log(20000 / 20) / Math.log(1.0072))).fill(null)
+            .map((_, i) => 20 * Math.pow(1.0072, i))),
+        GraphicEQFrequences: Array.from(new Set(
+            new Array(Math.ceil(Math.log(20000 / 20) / Math.log(1.0563))).fill(null)
+            .map((_, i) => Math.floor(20 * Math.pow(1.0563, i))))).sort((a, b) => a - b)
+    };
+    let interp = function (fv, fr) {
+        let i = 0;
+        return fv.map(f => {
+            for (; i < fr.length-1; ++i) {
+                let [f0, v0] = fr[i]; let [f1, v1] = fr[i+1];
+                if (i == 0 && f < f0) return [f, v0];
+                else if (f >= f0 && f < f1) { let v = v0 + (v1 - v0) * (f - f0) / (f1 - f0); return [f, v]; }
+            }
+            return [f, fr[fr.length-1][1]];
+        });
+    };
+    let lowshelf = function (freq, q, gain, sampleRate) {
+        freq = freq / (sampleRate || config.DefaultSampleRate);
+        freq = Math.max(1e-6, Math.min(freq, 1)); q = Math.max(1e-4, Math.min(q, 1000)); gain = Math.max(-40, Math.min(gain, 40));
+        let w0 = 2 * Math.PI * freq, sin = Math.sin(w0), cos = Math.cos(w0), a = Math.pow(10, (gain / 40)), alpha = sin / (2 * q), alphamod = (2 * Math.sqrt(a) * alpha) || 0;
+        let a0 = ((a+1) + (a-1) * cos + alphamod), a1 = -2 * ((a-1) + (a+1) * cos), a2 = ((a+1) + (a-1) * cos - alphamod);
+        let b0 = a * ((a+1) - (a-1) * cos + alphamod), b1 = 2 * a * ((a-1) - (a+1) * cos), b2 = a * ((a+1) - (a-1) * cos - alphamod);
+        return [ 1.0, a1/a0, a2/a0, b0/a0, b1/a0, b2/a0 ];
+    };
+    let highshelf = function (freq, q, gain, sampleRate) {
+        freq = freq / (sampleRate || config.DefaultSampleRate);
+        freq = Math.max(1e-6, Math.min(freq, 1)); q = Math.max(1e-4, Math.min(q, 1000)); gain = Math.max(-40, Math.min(gain, 40));
+        let w0 = 2 * Math.PI * freq, sin = Math.sin(w0), cos = Math.cos(w0), a = Math.pow(10, (gain / 40)), alpha = sin / (2 * q), alphamod = (2 * Math.sqrt(a) * alpha) || 0;
+        let a0 = ((a+1) - (a-1) * cos + alphamod), a1 = 2 * ((a-1) - (a+1) * cos), a2 = ((a+1) - (a-1) * cos - alphamod);
+        let b0 = a * ((a+1) + (a-1) * cos + alphamod), b1 = -2 * a * ((a-1) + (a+1) * cos), b2 = a * ((a+1) + (a-1) * cos - alphamod);
+        return [ 1.0, a1/a0, a2/a0, b0/a0, b1/a0, b2/a0 ];
+    };
+    let peaking = function (freq, q, gain, sampleRate) {
+        freq = freq / (sampleRate || config.DefaultSampleRate);
+        freq = Math.max(1e-6, Math.min(freq, 1)); q = Math.max(1e-4, Math.min(q, 1000)); gain = Math.max(-40, Math.min(gain, 40));
+        let w0 = 2 * Math.PI * freq, sin = Math.sin(w0), cos = Math.cos(w0), a = Math.pow(10, (gain / 40)), alpha = sin / (2 * q);
+        let a0 = 1 + alpha / a, a1 = -2 * cos, a2 = 1 - alpha / a, b0 = 1 + alpha * a, b1 = -2 * cos, b2 = 1 - alpha * a;
+        return [ 1.0, a1/a0, a2/a0, b0/a0, b1/a0, b2/a0 ];
+    };
+    let calc_gains = function (freqs, coeffs, sampleRate) {
+        sampleRate = sampleRate || config.DefaultSampleRate;
+        let gains = new Array(freqs.length).fill(0);
+        for (let i = 0; i < coeffs.length; ++i) {
+            let [a0, a1, a2, b0, b1, b2] = coeffs[i];
+            for (let j = 0; j < freqs.length; ++j) {
+                let w = 2 * Math.PI * freqs[j] / sampleRate;
+                let phi = 4 * Math.pow(Math.sin(w / 2), 2);
+                let c = (10 * Math.log10(Math.pow(b0 + b1 + b2, 2) + (b0 * b2 * phi - (b1 * (b0 + b2) + 4 * b0 * b2)) * phi) -
+                         10 * Math.log10(Math.pow(a0 + a1 + a2, 2) + (a0 * a2 * phi - (a1 * (a0 + a2) + 4 * a0 * a2)) * phi));
+                gains[j] += c;
+            }
+        }
+        return gains;
+    };
+    let calc_preamp = function (fr1, fr2) {
+        let maxGain = -Infinity;
+        for (let i = 0; i < fr1.length; ++i) maxGain = Math.max(maxGain, fr2[i][1] - fr1[i][1]);
+        return -maxGain;
+    };
+    let filters_to_coeffs = function (filters, sampleRate) {
+        return filters.map(f => {
+            if (!f.freq || f.gain == null || !f.q) return null;
+            if (f.type === "LSQ") return lowshelf(f.freq, f.q, f.gain, sampleRate);
+            if (f.type === "HSQ") return highshelf(f.freq, f.q, f.gain, sampleRate);
+            if (f.type === "PK")  return peaking(f.freq, f.q, f.gain, sampleRate);
+            return null;
+        }).filter(f => f);
+    };
+    let apply = function (fr, filters, sampleRate) {
+        let freqs = fr.map(p => p[0]);
+        let coeffs = filters_to_coeffs(filters, sampleRate);
+        let gains = calc_gains(freqs, coeffs, sampleRate);
+        return fr.map((p, i) => [p[0], p[1] + gains[i]]);
+    };
+    return { config, interp, lowshelf, highshelf, peaking, calc_gains, calc_preamp, apply, filters_to_coeffs };
+})();
+</script>
+
+<!-- ══════════════════════════════════════════════════════════════
+     PLAYER  
+     ══════════════════════════════════════════════════════════════ -->
+<script>
+(function () {
+  const SERVER = 'http://localhost:8765';
+
+  // ── State ─────────────────────────────────────────────────────
+  let allFiles    = [];
+  let playlist    = [];   // currently filtered/ordered list
+  let currentIdx  = -1;
+  let shuffle     = false;
+  let repeatMode  = 0;    // 0=off 1=all 2=one
+  let eqEnabled   = true;
+  let activeFilters = [];
+  let preampDb    = 0;
+
+  // ── Audio graph ───────────────────────────────────────────────
+  let audioCtx    = null;
+  let sourceNode  = null;
+  let gainNode    = null;       // preamp
+  let biquads     = [];         // BiquadFilterNode[]
+  const audioEl   = new Audio();
+  audioEl.crossOrigin = 'anonymous';
+  audioEl.preload = 'auto';
+
+  let makeupNode = null; // always last node → destination, never rebuilt
+
+  function ensureCtx() {
+    if (audioCtx) return;
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    sourceNode = audioCtx.createMediaElementSource(audioEl);
+    gainNode   = audioCtx.createGain();
+    makeupNode = audioCtx.createGain();
+    makeupNode.gain.value = 1.0;
+    sourceNode.connect(gainNode);
+    makeupNode.connect(audioCtx.destination); // permanent, never changes
+  }
+
+  // Tracks the last EQ node so we can disconnect it from makeupNode on rebuild
+  let chainTailNode = null;
+
+  function rebuildEQChain() {
+    if (!audioCtx) return;
+
+    // Disconnect old chain tail from makeupNode (not from destination)
+    if (chainTailNode) {
+      try { chainTailNode.disconnect(makeupNode); } catch(e) {}
+    }
+    biquads.forEach(n => { try { n.disconnect(); } catch(e){} });
+    biquads = [];
+
+    gainNode.gain.value = Math.pow(10, preampDb / 20);
+
+    if (!eqEnabled || activeFilters.length === 0) {
+      gainNode.connect(makeupNode);
+      chainTailNode = gainNode;
+      return;
+    }
+
+    // IIR chain with Squiglink's exact biquad coefficients — identical math
+    const SR = audioCtx.sampleRate;
+    let prev = gainNode;
+    for (const f of activeFilters) {
+      let coeffs;
+      if      (f.type === 'PK')  coeffs = Equalizer.peaking(f.freq, f.q, f.gain, SR);
+      else if (f.type === 'LSQ') coeffs = Equalizer.lowshelf(f.freq, f.q, f.gain, SR);
+      else if (f.type === 'HSQ') coeffs = Equalizer.highshelf(f.freq, f.q, f.gain, SR);
+      else continue;
+      const [, a1, a2, b0, b1, b2] = coeffs;
+      const node = audioCtx.createIIRFilter([b0, b1, b2], [1, a1, a2]);
+      prev.connect(node);
+      prev = node;
+      biquads.push(node);
+    }
+
+    prev.connect(makeupNode);
+    chainTailNode = prev;
+  }
+
+  // ── Parse parametric EQ text from squig.link / autoeq.app ────
+  // Supports lines like:
+  //   Filter 1: ON PK Fc 85 Hz Gain 6.9 dB Q 3.000
+  //   Filter 1: ON LSQ Fc 60 Hz Gain 4.0 dB Q 0.707
+  //   Preamp: -6.8 dB
+  function parseFilterText(text) {
+    const filters = [];
+    let preamp = 0;
+
+    // Handle both newline-separated AND single-line pastes.
+    // Split on "Filter N:" or "Preamp:" boundaries so each token is its own chunk.
+    const chunks = text
+      .replace(/\r\n/g, '\n')
+      .split(/(?=Filter\s+\d+:|Preamp:)/i)
+      .map(s => s.trim())
+      .filter(Boolean);
+
+    for (const chunk of chunks) {
+      const preampMatch = chunk.match(/Preamp:\s*([-\d.]+)\s*dB/i);
+      if (preampMatch) { preamp = parseFloat(preampMatch[1]); continue; }
+
+      // Match:  Filter N: ON <TYPE> Fc <FREQ> Hz Gain <GAIN> dB Q <Q>
+      const m = chunk.match(/Filter\s+\d+:\s+ON\s+(\w+)\s+Fc\s+([\d.]+)\s+Hz\s+Gain\s+([-\d.]+)\s+dB\s+Q\s+([\d.]+)/i);
+      if (m) {
+        let type = m[1].toUpperCase();
+        if (type === 'LS' || type === 'LSC') type = 'LSQ';
+        if (type === 'HS' || type === 'HSC') type = 'HSQ';
+        filters.push({
+          type,
+          freq: parseFloat(m[2]),
+          gain: parseFloat(m[3]),
+          q:    parseFloat(m[4]),
+        });
+      }
+    }
+    return { filters, preamp };
+  }
+
+  // Compute preamp from filters so we don't clip
+  function computePreamp(filters) {
+    // Use Squiglink's own calc_gains to find peak gain, then negate
+    const testFreqs = Array.from({ length: 200 }, (_, i) => 20 * Math.pow(10, i * Math.log10(20000/20) / 199));
+    const coeffs = Equalizer.filters_to_coeffs(filters, 48000);
+    const gains  = Equalizer.calc_gains(testFreqs, coeffs, 48000);
+    const maxGain = Math.max(0, ...gains);
+    return -maxGain;
+  }
+
+  // ── Apply filters from text box ───────────────────────────────
+  function applyFilterText(text) {
+    const { filters, preamp } = parseFilterText(text);
+    if (filters.length === 0) {
+      showMsg('No valid filter lines found. Check the format.', 'error');
+      return;
+    }
+    activeFilters = filters;
+    // Use parsed preamp if present, otherwise compute a safe one
+    preampDb = preamp !== 0 ? preamp : computePreamp(filters);
+    rebuildEQChain();
+    renderFiltersTable();
+    setEqStatus('active', `${filters.length} filters active`);
+    showMsg(`✓ ${filters.length} filters applied, preamp ${preampDb.toFixed(1)} dB`, 'ok');
+  }
+
+  // ── Filters table ─────────────────────────────────────────────
+  function renderFiltersTable() {
+    const tbody = document.getElementById('filters-tbody');
+    const display = document.getElementById('filters-display');
+    if (activeFilters.length === 0) { display.style.display = 'none'; return; }
+    display.style.display = '';
+    document.getElementById('preamp-val').textContent = preampDb.toFixed(1) + ' dB';
+    tbody.innerHTML = activeFilters.map((f, i) => {
+      const gainCls = f.gain >= 0 ? 'gain-pos' : 'gain-neg';
+      return `<tr>
+        <td>${i + 1}</td>
+        <td>${f.type}</td>
+        <td>${f.freq >= 1000 ? (f.freq/1000).toFixed(1)+'k' : f.freq} Hz</td>
+        <td>${f.q.toFixed(2)}</td>
+        <td class="${gainCls}">${f.gain >= 0 ? '+' : ''}${f.gain.toFixed(1)} dB</td>
+      </tr>`;
+    }).join('');
+  }
+
+  // ── EQ status indicator ───────────────────────────────────────
+  function setEqStatus(state, label) {
+    const dot = document.getElementById('eq-dot');
+    const lbl = document.getElementById('eq-label');
+    dot.className = 'dot' + (state === 'active' ? ' active' : state === 'computing' ? ' computing' : '');
+    lbl.textContent = label;
+  }
+
+  // ── Library ───────────────────────────────────────────────────
+  async function loadLibrary() {
+    const libEl = document.getElementById('library');
+    try {
+      const res = await fetch(`${SERVER}/music`);
+      if (!res.ok) throw new Error('Server error');
+      allFiles = await res.json();
+      playlist = [...allFiles];
+      renderLibrary(allFiles);
+    } catch (e) {
+      libEl.innerHTML = `<div id="lib-status" style="color:var(--danger)">
+        ⚠ Cannot reach server.<br>
+        <span style="font-size:11px">Make sure server.js is running:<br>
+        <code>node server.js</code></span></div>`;
+    }
+  }
+
+  function groupByFolder(files) {
+    const groups = {};
+    for (const f of files) {
+      const parts = f.split('/');
+      const folder = parts.length > 1 ? parts.slice(0, -1).join(' / ') : '—';
+      const name   = parts[parts.length - 1];
+      if (!groups[folder]) groups[folder] = [];
+      groups[folder].push({ path: f, name: name.replace(/\.[^.]+$/, '') });
+    }
+    return groups;
+  }
+
+  function renderLibrary(files) {
+    const libEl = document.getElementById('library');
+    if (files.length === 0) {
+      libEl.innerHTML = '<div id="lib-status">No tracks found.</div>';
+      return;
+    }
+    playlist = files;
+    const groups = groupByFolder(files);
+    let html = '';
+    for (const [folder, tracks] of Object.entries(groups)) {
+      html += `<div class="lib-folder">${folder}</div>`;
+      for (const t of tracks) {
+        const idx = allFiles.indexOf(t.path);
+        html += `<div class="lib-track" data-path="${t.path}" data-idx="${idx}">${t.name}</div>`;
+      }
+    }
+    libEl.innerHTML = html;
+
+    libEl.querySelectorAll('.lib-track').forEach(el => {
+      el.addEventListener('click', () => {
+        const p = el.dataset.path;
+        currentIdx = playlist.indexOf(p);
+        if (currentIdx === -1) { playlist = files; currentIdx = playlist.indexOf(p); }
+        playTrack(p);
+      });
+    });
+    highlightCurrent();
+  }
+
+  function highlightCurrent() {
+    document.querySelectorAll('.lib-track').forEach(el => {
+      el.classList.toggle('playing', el.dataset.path === (playlist[currentIdx] || ''));
+    });
+  }
+
+  // ── Playback ──────────────────────────────────────────────────
+  function playTrack(path) {
+    ensureCtx();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    audioEl.src = `${SERVER}/file/${encodeURIComponent(path)}`;
+    audioEl.play();
+
+    const parts = path.split('/');
+    document.getElementById('np-title').textContent = parts[parts.length - 1].replace(/\.[^.]+$/, '');
+    document.getElementById('np-folder').textContent = parts.length > 1 ? parts.slice(0, -1).join(' / ') : '';
+    document.getElementById('btn-play').textContent = '⏸';
+    rebuildEQChain();
+    highlightCurrent();
+  }
+
+  function togglePlay() {
+    ensureCtx();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    if (audioEl.paused) {
+      if (!audioEl.src) { if (playlist.length) { currentIdx = 0; playTrack(playlist[0]); } return; }
+      audioEl.play();
+      document.getElementById('btn-play').textContent = '⏸';
+    } else {
+      audioEl.pause();
+      document.getElementById('btn-play').textContent = '▶';
+    }
+  }
+
+  function playNext() {
+    if (playlist.length === 0) return;
+    if (repeatMode === 2) { audioEl.currentTime = 0; audioEl.play(); return; }
+    let next;
+    if (shuffle) {
+      next = Math.floor(Math.random() * playlist.length);
+    } else {
+      next = (currentIdx + 1) % playlist.length;
+    }
+    currentIdx = next;
+    playTrack(playlist[currentIdx]);
+  }
+
+  function playPrev() {
+    if (playlist.length === 0) return;
+    if (audioEl.currentTime > 3) { audioEl.currentTime = 0; return; }
+    currentIdx = (currentIdx - 1 + playlist.length) % playlist.length;
+    playTrack(playlist[currentIdx]);
+  }
+
+  // ── Progress / time ───────────────────────────────────────────
+  function fmt(s) {
+    s = Math.floor(s || 0);
+    return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+  }
+
+  audioEl.addEventListener('timeupdate', () => {
+    const pct = audioEl.duration ? (audioEl.currentTime / audioEl.duration * 100) : 0;
+    document.getElementById('progress-bar-fill').style.width = pct + '%';
+    document.getElementById('time-cur').textContent = fmt(audioEl.currentTime);
+    document.getElementById('time-tot').textContent = fmt(audioEl.duration);
+  });
+
+  audioEl.addEventListener('ended', () => {
+    if (repeatMode === 2) { audioEl.play(); return; }
+    if (repeatMode === 1 || currentIdx < playlist.length - 1 || shuffle) {
+      playNext();
+    } else {
+      document.getElementById('btn-play').textContent = '▶';
+    }
+  });
+
+  audioEl.addEventListener('play',  () => { document.getElementById('btn-play').textContent = '⏸'; });
+  audioEl.addEventListener('pause', () => { document.getElementById('btn-play').textContent = '▶'; });
+
+  document.getElementById('progress-bar-outer').addEventListener('click', e => {
+    if (!audioEl.duration) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    audioEl.currentTime = ((e.clientX - rect.left) / rect.width) * audioEl.duration;
+  });
+
+  document.getElementById('vol-slider').addEventListener('input', e => {
+    // Control makeupNode gain so we can go above 1.0 to compensate Web Audio path loss
+    if (makeupNode) makeupNode.gain.value = parseFloat(e.target.value);
+    else audioEl.volume = Math.min(1, e.target.value);
+  });
+
+  // ── Transport buttons ─────────────────────────────────────────
+  document.getElementById('btn-play').addEventListener('click', togglePlay);
+  document.getElementById('btn-prev').addEventListener('click', playPrev);
+  document.getElementById('btn-next').addEventListener('click', playNext);
+
+  document.getElementById('btn-shuffle').addEventListener('click', function() {
+    shuffle = !shuffle;
+    this.classList.toggle('active', shuffle);
+  });
+
+  document.getElementById('btn-repeat').addEventListener('click', function() {
+    repeatMode = (repeatMode + 1) % 3;
+    this.classList.toggle('active', repeatMode > 0);
+    this.textContent = repeatMode === 2 ? '↻¹' : '↻';
+  });
+
+  // ── Search ────────────────────────────────────────────────────
+  document.getElementById('search').addEventListener('input', function() {
+    const q = this.value.toLowerCase().trim();
+    const filtered = q ? allFiles.filter(f => f.toLowerCase().includes(q)) : allFiles;
+    renderLibrary(filtered);
+  });
+
+  // ── EQ controls ───────────────────────────────────────────────
+  document.getElementById('eq-enabled').addEventListener('change', function() {
+    eqEnabled = this.checked;
+    rebuildEQChain();
+    setEqStatus(eqEnabled && activeFilters.length ? 'active' : '', eqEnabled ? 'enabled' : 'bypassed');
+  });
+
+  document.getElementById('btn-autoeq').addEventListener('click', () => {
+    const text = document.getElementById('iem-input').value.trim();
+    if (!text) { showMsg('Paste filter text first.', 'error'); return; }
+    applyFilterText(text);
+  });
+
+  document.getElementById('btn-clear-eq').addEventListener('click', () => {
+    activeFilters = [];
+    preampDb = 0;
+    rebuildEQChain();
+    renderFiltersTable();
+    document.getElementById('iem-input').value = '';
+    setEqStatus('', 'idle');
+    showMsg('EQ cleared.', '');
+  });
+
+  // ── Helpers ───────────────────────────────────────────────────
+  function showMsg(text, type) {
+    const el = document.getElementById('msg');
+    el.textContent = text;
+    el.className = type || '';
+  }
+
+  // ── Keyboard shortcuts ────────────────────────────────────────
+  document.addEventListener('keydown', e => {
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+    if (e.code === 'Space') { e.preventDefault(); togglePlay(); }
+    if (e.code === 'ArrowRight') { audioEl.currentTime = Math.min(audioEl.duration || 0, audioEl.currentTime + 10); }
+    if (e.code === 'ArrowLeft')  { audioEl.currentTime = Math.max(0, audioEl.currentTime - 10); }
+    if (e.code === 'ArrowUp')    { const s = document.getElementById('vol-slider'); s.value = Math.min(1.5, parseFloat(s.value) + 0.05); if (makeupNode) makeupNode.gain.value = parseFloat(s.value); }
+    if (e.code === 'ArrowDown')  { const s = document.getElementById('vol-slider'); s.value = Math.max(0, parseFloat(s.value) - 0.05); if (makeupNode) makeupNode.gain.value = parseFloat(s.value); }
+  });
+
+  // ── Boot ──────────────────────────────────────────────────────
+  loadLibrary();
+})();
+</script>
+</body>
+</html>
