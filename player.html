@@ -240,172 +240,198 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    padding: 20px;
-    gap: 16px;
-    overflow-y: auto;
+    background: var(--bg);
   }
 
+  /* top toolbar */
+  #eq-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+    flex-wrap: wrap;
+  }
   .section-label {
     font-size: 10px;
     font-family: 'DM Mono', monospace;
     color: var(--muted);
     text-transform: uppercase;
     letter-spacing: 0.1em;
-    margin-bottom: 6px;
   }
-
-  /* EQ status pill */
-  #eq-status {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    background: var(--bg3);
-    border: 1px solid var(--border);
-    border-radius: 20px;
-    padding: 4px 12px;
-    font-size: 12px;
-    font-family: 'DM Mono', monospace;
-  }
-  .dot {
-    width: 7px; height: 7px;
-    border-radius: 50%;
-    background: var(--muted);
-  }
-  .dot.active { background: var(--green); box-shadow: 0 0 6px var(--green); }
-  .dot.computing { background: var(--accent); animation: pulse 0.8s ease-in-out infinite; }
-
-  @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.3; } }
-
-  /* IEM selector */
-  #iem-row {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    flex-wrap: wrap;
-  }
-  #iem-input {
-    flex: 1;
-    min-width: 180px;
-    background: var(--bg3);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    color: var(--text);
-    padding: 7px 10px;
-    font-size: 12px;
-    font-family: 'DM Sans', sans-serif;
-    outline: none;
-    transition: border-color 0.15s;
-  }
-  #iem-input:focus { border-color: var(--accent); }
-  #iem-input::placeholder { color: var(--muted); }
+  #eq-toolbar .section-label { margin-right: 4px; }
 
   .btn {
     background: var(--bg3);
     border: 1px solid var(--border);
-    border-radius: 6px;
+    border-radius: 5px;
     color: var(--text);
     cursor: pointer;
-    padding: 7px 14px;
-    font-size: 12px;
+    padding: 5px 11px;
+    font-size: 11px;
     font-family: 'DM Sans', sans-serif;
     white-space: nowrap;
-    transition: background 0.15s, border-color 0.15s;
+    transition: background 0.12s, border-color 0.12s;
+    line-height: 1.4;
   }
   .btn:hover { background: var(--bg4); }
-  .btn.primary {
-    background: var(--accent);
-    border-color: var(--accent);
-    color: #fff;
-    font-weight: 500;
-  }
-  .btn.primary:hover { background: var(--accent2); border-color: var(--accent2); }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 500; }
+  .btn.primary:hover { opacity: 0.85; }
   .btn.danger { border-color: var(--danger); color: var(--danger); }
   .btn.danger:hover { background: rgba(247,106,106,0.1); }
+  .btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
 
-  /* Target selector */
-  #target-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-  #target-select {
+  /* EQ toggle pill */
+  .eq-toggle-pill {
+    display: flex; align-items: center; gap: 6px;
+    background: var(--bg3); border: 1px solid var(--border);
+    border-radius: 5px; padding: 4px 10px; cursor: pointer;
+    font-size: 11px; color: var(--muted); transition: border-color 0.15s;
+  }
+  .eq-toggle-pill.on { border-color: var(--accent); color: var(--accent2); }
+  #eq-enabled { display: none; }
+  .eq-dot { width:6px; height:6px; border-radius:50%; background:var(--muted); transition: background 0.2s; }
+  .eq-toggle-pill.on .eq-dot { background: var(--green); box-shadow: 0 0 5px var(--green); }
+
+  @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.3; } }
+
+  /* ── Curve canvas ── */
+  #eq-canvas-wrap {
     flex: 1;
-    min-width: 160px;
+    position: relative;
+    min-height: 0;
+    cursor: crosshair;
+  }
+  #eq-canvas { display: block; width: 100%; height: 100%; }
+
+  /* ── Band strip ── */
+  #band-strip {
+    display: flex;
+    gap: 0;
+    border-top: 1px solid var(--border);
+    background: var(--bg2);
+    overflow-x: auto;
+    flex-shrink: 0;
+  }
+  #band-strip::-webkit-scrollbar { height: 3px; }
+  #band-strip::-webkit-scrollbar-thumb { background: var(--bg4); }
+
+  .band-card {
+    min-width: 88px;
+    border-right: 1px solid var(--border);
+    padding: 8px 8px 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    cursor: pointer;
+    transition: background 0.1s;
+    position: relative;
+  }
+  .band-card:hover { background: var(--bg3); }
+  .band-card.selected { background: rgba(124,106,247,0.12); }
+  .band-card.disabled { opacity: 0.38; }
+
+  .band-num {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    color: var(--muted);
+    letter-spacing: 0.06em;
+  }
+  .band-type-sel {
+    background: transparent;
+    border: none;
+    color: var(--accent2);
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    font-weight: 500;
+    cursor: pointer;
+    padding: 0;
+    outline: none;
+    width: 100%;
+  }
+  .band-type-sel option { background: var(--bg2); color: var(--text); }
+
+  .band-val {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--text);
+    white-space: nowrap;
+  }
+  .band-gain {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text);
+  }
+  .band-gain.pos { color: var(--green); }
+  .band-gain.neg { color: var(--danger); }
+
+  .band-delete {
+    position: absolute;
+    top: 4px; right: 5px;
+    font-size: 11px;
+    color: var(--muted);
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.1s;
+    background: none; border: none; padding: 0; line-height: 1;
+  }
+  .band-card:hover .band-delete { opacity: 1; }
+  .band-delete:hover { color: var(--danger); }
+
+  /* ── Import modal ── */
+  #import-overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.6);
+    z-index: 100;
+    align-items: center; justify-content: center;
+  }
+  #import-overlay.open { display: flex; }
+  #import-modal {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+    width: 480px;
+    max-width: 95vw;
+    display: flex; flex-direction: column; gap: 12px;
+  }
+  #import-modal h3 { font-size: 13px; font-weight: 500; }
+  #import-modal p { font-size: 11px; color: var(--muted); line-height: 1.6; }
+  #iem-input {
+    width: 100%;
     background: var(--bg3);
     border: 1px solid var(--border);
     border-radius: 6px;
     color: var(--text);
-    padding: 7px 10px;
-    font-size: 12px;
-    font-family: 'DM Sans', sans-serif;
-    outline: none;
-    cursor: pointer;
-  }
-  #target-select option { background: var(--bg3); }
-
-  /* Filter bands display */
-  #filters-display {
-    background: var(--bg2);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 12px;
-  }
-  #filters-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-family: 'DM Mono', monospace;
+    padding: 9px 11px;
     font-size: 11px;
-  }
-  #filters-table th {
-    color: var(--muted);
-    font-weight: 400;
-    text-align: left;
-    padding: 2px 8px 6px 0;
-    border-bottom: 1px solid var(--border);
-  }
-  #filters-table td {
-    padding: 4px 8px 4px 0;
-    color: var(--text);
-  }
-  #filters-table tr:last-child td { padding-bottom: 0; }
-  .gain-pos { color: var(--green); }
-  .gain-neg { color: var(--danger); }
-
-  /* Preamp */
-  #preamp-row {
     font-family: 'DM Mono', monospace;
-    font-size: 12px;
-    color: var(--muted);
-    display: flex;
-    gap: 6px;
-    align-items: center;
+    resize: vertical;
+    min-height: 120px;
+    outline: none;
+    line-height: 1.7;
+    transition: border-color 0.15s;
   }
-  #preamp-val { color: var(--text); }
+  #iem-input:focus { border-color: var(--accent); }
+  .modal-btns { display: flex; gap: 8px; justify-content: flex-end; }
 
-  /* EQ toggle */
-  #eq-toggle-row { display: flex; align-items: center; gap: 10px; }
-  .toggle-label { font-size: 12px; color: var(--muted); }
-  #eq-enabled {
-    -webkit-appearance: none; appearance: none;
-    width: 36px; height: 20px;
-    background: var(--bg4);
-    border-radius: 10px;
-    cursor: pointer;
-    position: relative;
-    transition: background 0.2s;
-    flex-shrink: 0;
-  }
-  #eq-enabled:checked { background: var(--accent); }
-  #eq-enabled::after {
-    content: '';
-    position: absolute;
-    top: 3px; left: 3px;
-    width: 14px; height: 14px;
-    border-radius: 50%;
-    background: #fff;
-    transition: left 0.2s;
-  }
-  #eq-enabled:checked::after { left: 19px; }
-
-  #msg { font-size: 12px; color: var(--muted); font-style: italic; min-height: 16px; }
+  #msg { font-size: 11px; color: var(--muted); font-style: italic; padding: 2px 14px; }
   #msg.error { color: var(--danger); font-style: normal; }
   #msg.ok { color: var(--green); font-style: normal; }
+
+  /* preamp label in toolbar */
+  #preamp-display {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    margin-left: auto;
+    white-space: nowrap;
+  }
+  #preamp-display span { color: var(--text); }
 </style>
 </head>
 <body>
@@ -454,56 +480,46 @@
 
   <!-- EQ panel -->
   <div id="eq-panel">
-    <div>
-      <div class="section-label">Equalizer</div>
-      <div id="eq-toggle-row">
+
+    <!-- toolbar -->
+    <div id="eq-toolbar">
+      <span class="section-label">PEQ</span>
+
+      <label class="eq-toggle-pill on" id="eq-pill" title="Toggle EQ bypass">
         <input type="checkbox" id="eq-enabled" checked>
-        <label class="toggle-label" for="eq-enabled">EQ enabled</label>
-        <div id="eq-status"><div class="dot" id="eq-dot"></div><span id="eq-label">idle</span></div>
-      </div>
+        <div class="eq-dot"></div>
+        <span id="eq-pill-label">ON</span>
+      </label>
+
+      <button class="btn" id="btn-add-band">+ Band</button>
+      <button class="btn" id="btn-import">Import…</button>
+      <button class="btn danger" id="btn-clear-eq">Clear</button>
+
+      <div id="preamp-display">Preamp: <span id="preamp-val">0.0 dB</span></div>
     </div>
 
-    <div>
-      <div class="section-label">Target curve</div>
-      <div id="target-row">
-        <select id="target-select">
-          <option value="harman_in-ear_2019v2">Harman In-Ear 2019 v2 (recommended)</option>
-          <option value="harman_in-ear_2017-1">Harman In-Ear 2017</option>
-          <option value="diffuse_field">Diffuse Field</option>
-          <option value="flat">Flat (no target shaping)</option>
-        </select>
-      </div>
+    <!-- frequency response canvas -->
+    <div id="eq-canvas-wrap">
+      <canvas id="eq-canvas"></canvas>
     </div>
 
-    <div>
-      <div class="section-label">IEM / Headphone measurement</div>
-      <div id="iem-row">
-        <input id="iem-input" type="text" placeholder="Paste AutoEQ filter text here…">
-        <button class="btn primary" id="btn-autoeq">Apply AutoEQ</button>
-        <button class="btn danger" id="btn-clear-eq">Clear EQ</button>
-      </div>
-      <div style="margin-top:8px;font-size:11px;color:var(--muted);line-height:1.6">
-        Paste the <strong style="color:var(--text)">Parametric EQ</strong> text from 
-        <a href="https://squig.link" target="_blank" style="color:var(--accent2)">squig.link</a> 
-        or <a href="https://autoeq.app" target="_blank" style="color:var(--accent2)">autoeq.app</a> 
-        — the lines that look like:<br>
-        <code style="color:var(--muted);font-size:10px">Filter 1: ON PK Fc 85 Hz Gain 6.9 dB Q 3.000</code>
-      </div>
-    </div>
-
-    <div id="filters-display" style="display:none">
-      <div class="section-label">Active filters</div>
-      <div id="preamp-row">Preamp: <span id="preamp-val">0.0 dB</span></div>
-      <div style="height:8px"></div>
-      <table id="filters-table">
-        <thead>
-          <tr><th>#</th><th>Type</th><th>Freq</th><th>Q</th><th>Gain</th></tr>
-        </thead>
-        <tbody id="filters-tbody"></tbody>
-      </table>
-    </div>
+    <!-- per-band strip -->
+    <div id="band-strip"></div>
 
     <div id="msg"></div>
+  </div>
+
+  <!-- Import modal -->
+  <div id="import-overlay">
+    <div id="import-modal">
+      <h3>Import Parametric EQ</h3>
+      <p>Paste filter text from <a href="https://squig.link" target="_blank" style="color:var(--accent2)">squig.link</a>, <a href="https://autoeq.app" target="_blank" style="color:var(--accent2)">autoeq.app</a>, or any tool that exports APO/REW format:</p>
+      <textarea id="iem-input" placeholder="Preamp: -6.8 dB&#10;Filter 1: ON PK Fc 85 Hz Gain 6.9 dB Q 3.000&#10;Filter 2: ON PK Fc 200 Hz Gain -2.0 dB Q 1.500&#10;…"></textarea>
+      <div class="modal-btns">
+        <button class="btn" id="btn-import-cancel">Cancel</button>
+        <button class="btn primary" id="btn-import-apply">Apply</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -688,95 +704,339 @@ Equalizer = (function() {
     chainTailNode = prev;
   }
 
-  // ── Parse parametric EQ text from squig.link / autoeq.app ────
-  // Supports lines like:
-  //   Filter 1: ON PK Fc 85 Hz Gain 6.9 dB Q 3.000
-  //   Filter 1: ON LSQ Fc 60 Hz Gain 4.0 dB Q 0.707
-  //   Preamp: -6.8 dB
+  // ══════════════════════════════════════════════════════════════
+  //  INTERACTIVE PEQ ENGINE
+  // ══════════════════════════════════════════════════════════════
+
+  // ── Band state ────────────────────────────────────────────────
+  // Each band: { id, type:'PK'|'LSQ'|'HSQ', freq, gain, q, enabled }
+  let bands = [];
+  let selectedBandId = null;
+  let nextBandId = 1;
+
+  // Canvas state
+  const PLOT_FREQS = (() => {
+    const n = 600;
+    return Array.from({length:n}, (_,i) => 20 * Math.pow(20000/20, i/(n-1)));
+  })();
+
+  // ── Freq/dB ↔ canvas pixel mapping ───────────────────────────
+  const DB_MIN = -20, DB_MAX = 20;
+  function freqToX(f, W, pad) { return pad.l + Math.log10(f/20)/Math.log10(20000/20)*(W-pad.l-pad.r); }
+  function xToFreq(x, W, pad) { return 20 * Math.pow(20000/20, (x-pad.l)/(W-pad.l-pad.r)); }
+  function dbToY(db, H, pad)  { return pad.t + (1-(db-DB_MIN)/(DB_MAX-DB_MIN))*(H-pad.t-pad.b); }
+  function yToDb(y, H, pad)   { return DB_MAX - (y-pad.t)/(H-pad.t-pad.b)*(DB_MAX-DB_MIN); }
+
+  // ── Compute combined FR curve ─────────────────────────────────
+  function computeCurve(SR) {
+    const activeBands = bands.filter(b => b.enabled);
+    if (!activeBands.length) return PLOT_FREQS.map(() => 0);
+    const coeffs = Equalizer.filters_to_coeffs(activeBands, SR || 48000);
+    return Equalizer.calc_gains(PLOT_FREQS, coeffs, SR || 48000);
+  }
+
+  // ── Auto preamp (no clip) ─────────────────────────────────────
+  function computeAutoPreamp() {
+    const activeBands = bands.filter(b => b.enabled);
+    if (!activeBands.length) return 0;
+    const coeffs = Equalizer.filters_to_coeffs(activeBands, 48000);
+    const gains  = Equalizer.calc_gains(PLOT_FREQS, coeffs, 48000);
+    const maxG   = Math.max(0, ...gains);
+    return -maxG;
+  }
+
+  // ── Sync bands → audio chain ──────────────────────────────────
+  function syncEQ() {
+    activeFilters = bands.filter(b => b.enabled);
+    preampDb = computeAutoPreamp();
+    document.getElementById('preamp-val').textContent = preampDb.toFixed(1) + ' dB';
+    rebuildEQChain();
+    drawCurve();
+    renderBandStrip();
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  //  CANVAS DRAWING
+  // ─────────────────────────────────────────────────────────────
+  const canvas  = document.getElementById('eq-canvas');
+  const ctx2d   = canvas.getContext('2d');
+  const PAD     = { l:42, r:14, t:14, b:28 };
+
+  function resizeCanvas() {
+    const wrap = document.getElementById('eq-canvas-wrap');
+    const dpr  = devicePixelRatio || 1;
+    canvas.width  = wrap.clientWidth  * dpr;
+    canvas.height = wrap.clientHeight * dpr;
+    canvas.style.width  = wrap.clientWidth  + 'px';
+    canvas.style.height = wrap.clientHeight + 'px';
+    ctx2d.scale(dpr, dpr);
+    drawCurve();
+  }
+
+  function drawCurve() {
+    const W = canvas.clientWidth, H = canvas.clientHeight;
+    if (!W || !H) return;
+    ctx2d.clearRect(0, 0, W, H);
+
+    // ── Grid ──
+    const gridFreqs = [20,30,50,100,200,300,500,1000,2000,3000,5000,10000,20000];
+    ctx2d.strokeStyle = '#1e1e24'; ctx2d.lineWidth = 1;
+    gridFreqs.forEach(f => {
+      const x = freqToX(f, W, PAD);
+      ctx2d.beginPath(); ctx2d.moveTo(x, PAD.t); ctx2d.lineTo(x, H-PAD.b); ctx2d.stroke();
+    });
+    const dbLines = [-18,-12,-9,-6,-3,0,3,6,9,12,18];
+    dbLines.forEach(db => {
+      const y = dbToY(db, H, PAD);
+      ctx2d.strokeStyle = db === 0 ? '#333340' : '#1e1e24';
+      ctx2d.lineWidth   = db === 0 ? 1.5 : 1;
+      ctx2d.beginPath(); ctx2d.moveTo(PAD.l, y); ctx2d.lineTo(W-PAD.r, y); ctx2d.stroke();
+    });
+
+    // ── Labels ──
+    ctx2d.font = '9px DM Mono, monospace';
+    ctx2d.fillStyle = '#4a4a55';
+    ctx2d.textAlign = 'center';
+    [50,100,200,500,'1k','2k','5k','10k','20k'].forEach((lbl, i) => {
+      const f = typeof lbl === 'string' ? parseInt(lbl)*1000 : lbl;
+      const x = freqToX(f, W, PAD);
+      ctx2d.fillText(lbl, x, H-PAD.b+13);
+    });
+    ctx2d.textAlign = 'right';
+    dbLines.filter(db => db % 6 === 0).forEach(db => {
+      ctx2d.fillText((db>0?'+':'')+db, PAD.l-5, dbToY(db,H,PAD)+3.5);
+    });
+
+    // ── Individual band curves (faint) ──
+    bands.forEach(band => {
+      if (!band.enabled) return;
+      const coeffs = Equalizer.filters_to_coeffs([band], 48000);
+      const gains  = Equalizer.calc_gains(PLOT_FREQS, coeffs, 48000);
+      const isSel  = band.id === selectedBandId;
+      ctx2d.strokeStyle = isSel ? 'rgba(168,159,249,0.35)' : 'rgba(124,106,247,0.15)';
+      ctx2d.lineWidth   = isSel ? 1.5 : 1;
+      ctx2d.beginPath();
+      gains.forEach((g, i) => {
+        const x = freqToX(PLOT_FREQS[i], W, PAD);
+        const y = dbToY(g, H, PAD);
+        i === 0 ? ctx2d.moveTo(x,y) : ctx2d.lineTo(x,y);
+      });
+      ctx2d.stroke();
+    });
+
+    // ── Combined curve ──
+    const gains = computeCurve(48000);
+    ctx2d.strokeStyle = eqEnabled ? '#a89ff9' : '#4a4a55';
+    ctx2d.lineWidth   = 2;
+    ctx2d.shadowColor = eqEnabled ? 'rgba(124,106,247,0.4)' : 'transparent';
+    ctx2d.shadowBlur  = 6;
+    ctx2d.beginPath();
+    gains.forEach((g, i) => {
+      const x = freqToX(PLOT_FREQS[i], W, PAD);
+      const y = dbToY(g, H, PAD);
+      i === 0 ? ctx2d.moveTo(x,y) : ctx2d.lineTo(x,y);
+    });
+    ctx2d.stroke();
+    ctx2d.shadowBlur = 0;
+
+    // ── Band handles ──
+    bands.forEach(band => {
+      const x   = freqToX(band.freq, W, PAD);
+      const y   = dbToY(band.gain, H, PAD);
+      const sel = band.id === selectedBandId;
+      ctx2d.beginPath();
+      ctx2d.arc(x, y, sel ? 7 : 5, 0, Math.PI*2);
+      ctx2d.fillStyle   = band.enabled ? (sel ? '#a89ff9' : '#7c6af7') : '#3a3a45';
+      ctx2d.strokeStyle = sel ? '#fff' : 'rgba(255,255,255,0.25)';
+      ctx2d.lineWidth   = sel ? 1.5 : 1;
+      ctx2d.fill(); ctx2d.stroke();
+    });
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  //  BAND STRIP
+  // ─────────────────────────────────────────────────────────────
+  function fmtFreq(f) { return f >= 1000 ? (f/1000).toFixed(f%1000===0?0:1)+'k' : Math.round(f)+''; }
+  function fmtGain(g) { return (g>=0?'+':'')+g.toFixed(1)+' dB'; }
+
+  function renderBandStrip() {
+    const strip = document.getElementById('band-strip');
+    strip.innerHTML = '';
+    bands.forEach(band => {
+      const card = document.createElement('div');
+      card.className = 'band-card' + (band.id===selectedBandId?' selected':'') + (band.enabled?'':' disabled');
+      card.dataset.id = band.id;
+
+      const gainClass = band.gain > 0.05 ? 'pos' : band.gain < -0.05 ? 'neg' : '';
+
+      card.innerHTML = `
+        <div class="band-num">BAND ${bands.indexOf(band)+1}</div>
+        <select class="band-type-sel" data-id="${band.id}">
+          <option value="PK"  ${band.type==='PK' ?'selected':''}>PK</option>
+          <option value="LSQ" ${band.type==='LSQ'?'selected':''}>LSQ</option>
+          <option value="HSQ" ${band.type==='HSQ'?'selected':''}>HSQ</option>
+        </select>
+        <div class="band-val">${fmtFreq(band.freq)} Hz</div>
+        <div class="band-gain ${gainClass}">${fmtGain(band.gain)}</div>
+        <div class="band-val" style="color:var(--muted)">Q ${band.q.toFixed(2)}</div>
+        <button class="band-delete" data-id="${band.id}" title="Remove band">✕</button>`;
+
+      card.addEventListener('click', e => {
+        if (e.target.classList.contains('band-delete') || e.target.classList.contains('band-type-sel')) return;
+        selectedBandId = band.id;
+        drawCurve(); renderBandStrip();
+      });
+
+      card.querySelector('.band-type-sel').addEventListener('change', e => {
+        e.stopPropagation();
+        band.type = e.target.value;
+        syncEQ();
+      });
+      card.querySelector('.band-delete').addEventListener('click', e => {
+        e.stopPropagation();
+        bands = bands.filter(b => b.id !== band.id);
+        if (selectedBandId === band.id) selectedBandId = bands.length ? bands[bands.length-1].id : null;
+        syncEQ();
+      });
+
+      strip.appendChild(card);
+    });
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  //  CANVAS DRAG INTERACTION
+  // ─────────────────────────────────────────────────────────────
+  let dragBand = null, dragStartY = 0, dragStartGain = 0;
+  let dragStartX = 0, dragStartFreq = 0;
+
+  function hitTest(cx, cy) {
+    const W = canvas.clientWidth, H = canvas.clientHeight;
+    for (let i = bands.length-1; i >= 0; i--) {
+      const b = bands[i];
+      const bx = freqToX(b.freq, W, PAD);
+      const by = dbToY(b.gain, H, PAD);
+      if (Math.hypot(cx-bx, cy-by) < 10) return b;
+    }
+    return null;
+  }
+
+  canvas.addEventListener('mousedown', e => {
+    const rect = canvas.getBoundingClientRect();
+    const cx = e.clientX - rect.left, cy = e.clientY - rect.top;
+    const hit = hitTest(cx, cy);
+    if (hit) {
+      dragBand = hit;
+      selectedBandId = hit.id;
+      dragStartX = cx; dragStartFreq = hit.freq;
+      dragStartY = cy; dragStartGain = hit.gain;
+      canvas.style.cursor = 'grabbing';
+      renderBandStrip();
+    }
+  });
+
+  window.addEventListener('mousemove', e => {
+    if (!dragBand) return;
+    const rect = canvas.getBoundingClientRect();
+    const W = canvas.clientWidth, H = canvas.clientHeight;
+    const cx = e.clientX - rect.left, cy = e.clientY - rect.top;
+
+    // Horizontal → frequency
+    const newFreq = xToFreq(cx, W, PAD);
+    dragBand.freq = Math.max(20, Math.min(20000, newFreq));
+
+    // Vertical → gain  (hold Shift = fine control)
+    const rawDb = yToDb(cy, H, PAD);
+    const snap = e.shiftKey ? 0.1 : 0.5;
+    dragBand.gain = Math.max(-20, Math.min(20, Math.round(rawDb/snap)*snap));
+
+    syncEQ();
+  });
+
+  window.addEventListener('mouseup', () => {
+    if (dragBand) { canvas.style.cursor = 'crosshair'; dragBand = null; }
+  });
+
+  // Scroll on handle = adjust Q
+  canvas.addEventListener('wheel', e => {
+    const rect = canvas.getBoundingClientRect();
+    const cx = e.clientX - rect.left, cy = e.clientY - rect.top;
+    const hit = hitTest(cx, cy);
+    if (!hit) return;
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? -0.05 : 0.05;
+    hit.q = Math.max(0.1, Math.min(10, Math.round((hit.q + delta)*100)/100));
+    selectedBandId = hit.id;
+    syncEQ();
+  }, { passive: false });
+
+  // Double-click on canvas (empty area) = add band
+  canvas.addEventListener('dblclick', e => {
+    const rect = canvas.getBoundingClientRect();
+    const cx = e.clientX - rect.left, cy = e.clientY - rect.top;
+    if (hitTest(cx, cy)) return;
+    const W = canvas.clientWidth, H = canvas.clientHeight;
+    const freq = Math.round(xToFreq(cx, W, PAD));
+    const gain = Math.round(yToDb(cy, H, PAD) * 2) / 2;
+    addBand({ freq: Math.max(20, Math.min(20000, freq)), gain: Math.max(-20,Math.min(20,gain)), q: 1.0, type: 'PK' });
+  });
+
+  // ─────────────────────────────────────────────────────────────
+  //  BAND MANAGEMENT
+  // ─────────────────────────────────────────────────────────────
+  function addBand(opts) {
+    const band = {
+      id:      nextBandId++,
+      type:    opts.type  || 'PK',
+      freq:    opts.freq  || 1000,
+      gain:    opts.gain  !== undefined ? opts.gain : 0,
+      q:       opts.q     || 1.0,
+      enabled: true,
+    };
+    bands.push(band);
+    selectedBandId = band.id;
+    syncEQ();
+    // Scroll band strip to end
+    const strip = document.getElementById('band-strip');
+    strip.scrollLeft = strip.scrollWidth;
+  }
+
+  // ── Parse imported text ───────────────────────────────────────
   function parseFilterText(text) {
     const filters = [];
     let preamp = 0;
-
-    // Handle both newline-separated AND single-line pastes.
-    // Split on "Filter N:" or "Preamp:" boundaries so each token is its own chunk.
-    const chunks = text
-      .replace(/\r\n/g, '\n')
-      .split(/(?=Filter\s+\d+:|Preamp:)/i)
-      .map(s => s.trim())
-      .filter(Boolean);
-
+    const chunks = text.replace(/\r\n/g,'\n').split(/(?=Filter\s+\d+:|Preamp:)/i).map(s=>s.trim()).filter(Boolean);
     for (const chunk of chunks) {
-      const preampMatch = chunk.match(/Preamp:\s*([-\d.]+)\s*dB/i);
-      if (preampMatch) { preamp = parseFloat(preampMatch[1]); continue; }
-
-      // Match:  Filter N: ON <TYPE> Fc <FREQ> Hz Gain <GAIN> dB Q <Q>
+      const pm = chunk.match(/Preamp:\s*([-\d.]+)\s*dB/i);
+      if (pm) { preamp = parseFloat(pm[1]); continue; }
       const m = chunk.match(/Filter\s+\d+:\s+ON\s+(\w+)\s+Fc\s+([\d.]+)\s+Hz\s+Gain\s+([-\d.]+)\s+dB\s+Q\s+([\d.]+)/i);
       if (m) {
         let type = m[1].toUpperCase();
-        if (type === 'LS' || type === 'LSC') type = 'LSQ';
-        if (type === 'HS' || type === 'HSC') type = 'HSQ';
-        filters.push({
-          type,
-          freq: parseFloat(m[2]),
-          gain: parseFloat(m[3]),
-          q:    parseFloat(m[4]),
-        });
+        if (type==='LS'||type==='LSC') type='LSQ';
+        if (type==='HS'||type==='HSC') type='HSQ';
+        filters.push({ type, freq:parseFloat(m[2]), gain:parseFloat(m[3]), q:parseFloat(m[4]) });
       }
     }
     return { filters, preamp };
   }
 
-  // Compute preamp from filters so we don't clip
-  function computePreamp(filters) {
-    // Use Squiglink's own calc_gains to find peak gain, then negate
-    const testFreqs = Array.from({ length: 200 }, (_, i) => 20 * Math.pow(10, i * Math.log10(20000/20) / 199));
-    const coeffs = Equalizer.filters_to_coeffs(filters, 48000);
-    const gains  = Equalizer.calc_gains(testFreqs, coeffs, 48000);
-    const maxGain = Math.max(0, ...gains);
-    return -maxGain;
-  }
-
-  // ── Apply filters from text box ───────────────────────────────
-  function applyFilterText(text) {
+  function importFilters(text) {
     const { filters, preamp } = parseFilterText(text);
-    if (filters.length === 0) {
-      showMsg('No valid filter lines found. Check the format.', 'error');
-      return;
+    if (!filters.length) { showMsg('No valid filters found.', 'error'); return false; }
+    bands = filters.map(f => ({ ...f, id: nextBandId++, enabled: true }));
+    selectedBandId = bands.length ? bands[0].id : null;
+    // If explicit preamp given, honor it; otherwise auto-compute
+    if (preamp !== 0) {
+      preampDb = preamp;
+      activeFilters = bands.filter(b => b.enabled);
+      document.getElementById('preamp-val').textContent = preampDb.toFixed(1) + ' dB';
+      rebuildEQChain();
+      drawCurve();
+      renderBandStrip();
+    } else {
+      syncEQ();
     }
-    activeFilters = filters;
-    // Use parsed preamp if present, otherwise compute a safe one
-    preampDb = preamp !== 0 ? preamp : computePreamp(filters);
-    rebuildEQChain();
-    renderFiltersTable();
-    setEqStatus('active', `${filters.length} filters active`);
-    showMsg(`✓ ${filters.length} filters applied, preamp ${preampDb.toFixed(1)} dB`, 'ok');
-  }
-
-  // ── Filters table ─────────────────────────────────────────────
-  function renderFiltersTable() {
-    const tbody = document.getElementById('filters-tbody');
-    const display = document.getElementById('filters-display');
-    if (activeFilters.length === 0) { display.style.display = 'none'; return; }
-    display.style.display = '';
-    document.getElementById('preamp-val').textContent = preampDb.toFixed(1) + ' dB';
-    tbody.innerHTML = activeFilters.map((f, i) => {
-      const gainCls = f.gain >= 0 ? 'gain-pos' : 'gain-neg';
-      return `<tr>
-        <td>${i + 1}</td>
-        <td>${f.type}</td>
-        <td>${f.freq >= 1000 ? (f.freq/1000).toFixed(1)+'k' : f.freq} Hz</td>
-        <td>${f.q.toFixed(2)}</td>
-        <td class="${gainCls}">${f.gain >= 0 ? '+' : ''}${f.gain.toFixed(1)} dB</td>
-      </tr>`;
-    }).join('');
-  }
-
-  // ── EQ status indicator ───────────────────────────────────────
-  function setEqStatus(state, label) {
-    const dot = document.getElementById('eq-dot');
-    const lbl = document.getElementById('eq-label');
-    dot.className = 'dot' + (state === 'active' ? ' active' : state === 'computing' ? ' computing' : '');
-    lbl.textContent = label;
+    showMsg('✓ ' + filters.length + ' bands imported', 'ok');
+    return true;
   }
 
   // ── Library ───────────────────────────────────────────────────
@@ -951,27 +1211,44 @@ Equalizer = (function() {
     renderLibrary(filtered);
   });
 
-  // ── EQ controls ───────────────────────────────────────────────
-  document.getElementById('eq-enabled').addEventListener('change', function() {
-    eqEnabled = this.checked;
+  // ── EQ toolbar controls ──────────────────────────────────────
+  const eqPill = document.getElementById('eq-pill');
+  const eqCheckbox = document.getElementById('eq-enabled');
+  eqPill.addEventListener('click', () => {
+    eqEnabled = !eqEnabled;
+    eqCheckbox.checked = eqEnabled;
+    eqPill.classList.toggle('on', eqEnabled);
+    document.getElementById('eq-pill-label').textContent = eqEnabled ? 'ON' : 'OFF';
     rebuildEQChain();
-    setEqStatus(eqEnabled && activeFilters.length ? 'active' : '', eqEnabled ? 'enabled' : 'bypassed');
+    drawCurve();
   });
 
-  document.getElementById('btn-autoeq').addEventListener('click', () => {
-    const text = document.getElementById('iem-input').value.trim();
-    if (!text) { showMsg('Paste filter text first.', 'error'); return; }
-    applyFilterText(text);
+  document.getElementById('btn-add-band').addEventListener('click', () => {
+    addBand({ freq: 1000, gain: 0, q: 1.0, type: 'PK' });
   });
 
   document.getElementById('btn-clear-eq').addEventListener('click', () => {
-    activeFilters = [];
-    preampDb = 0;
-    rebuildEQChain();
-    renderFiltersTable();
-    document.getElementById('iem-input').value = '';
-    setEqStatus('', 'idle');
+    bands = []; selectedBandId = null; activeFilters = []; preampDb = 0;
+    document.getElementById('preamp-val').textContent = '0.0 dB';
+    rebuildEQChain(); drawCurve(); renderBandStrip();
     showMsg('EQ cleared.', '');
+  });
+
+  // Import modal
+  const importOverlay = document.getElementById('import-overlay');
+  document.getElementById('btn-import').addEventListener('click', () => {
+    importOverlay.classList.add('open');
+    document.getElementById('iem-input').focus();
+  });
+  document.getElementById('btn-import-cancel').addEventListener('click', () => {
+    importOverlay.classList.remove('open');
+  });
+  importOverlay.addEventListener('click', e => {
+    if (e.target === importOverlay) importOverlay.classList.remove('open');
+  });
+  document.getElementById('btn-import-apply').addEventListener('click', () => {
+    const text = document.getElementById('iem-input').value.trim();
+    if (importFilters(text)) { importOverlay.classList.remove('open'); }
   });
 
   // ── Helpers ───────────────────────────────────────────────────
@@ -979,19 +1256,30 @@ Equalizer = (function() {
     const el = document.getElementById('msg');
     el.textContent = text;
     el.className = type || '';
+    if (text) setTimeout(() => { if (el.textContent === text) el.textContent = ''; }, 3000);
   }
 
   // ── Keyboard shortcuts ────────────────────────────────────────
   document.addEventListener('keydown', e => {
-    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
     if (e.code === 'Space') { e.preventDefault(); togglePlay(); }
     if (e.code === 'ArrowRight') { audioEl.currentTime = Math.min(audioEl.duration || 0, audioEl.currentTime + 10); }
     if (e.code === 'ArrowLeft')  { audioEl.currentTime = Math.max(0, audioEl.currentTime - 10); }
     if (e.code === 'ArrowUp')    { const s = document.getElementById('vol-slider'); s.value = Math.min(1.5, parseFloat(s.value) + 0.05); if (makeupNode) makeupNode.gain.value = parseFloat(s.value); }
     if (e.code === 'ArrowDown')  { const s = document.getElementById('vol-slider'); s.value = Math.max(0, parseFloat(s.value) - 0.05); if (makeupNode) makeupNode.gain.value = parseFloat(s.value); }
+    // Delete selected band
+    if ((e.code === 'Backspace' || e.code === 'Delete') && selectedBandId !== null) {
+      bands = bands.filter(b => b.id !== selectedBandId);
+      selectedBandId = bands.length ? bands[bands.length-1].id : null;
+      syncEQ();
+    }
   });
 
+  // ── Resize observer ───────────────────────────────────────────
+  new ResizeObserver(resizeCanvas).observe(document.getElementById('eq-canvas-wrap'));
+
   // ── Boot ──────────────────────────────────────────────────────
+  resizeCanvas();
   loadLibrary();
 })();
 </script>
