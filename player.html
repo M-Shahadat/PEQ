@@ -1048,14 +1048,15 @@ Equalizer = (function() {
   }
 
   // ── Sync bands → audio chain ──────────────────────────────────
-  function syncEQ(skipTableRender) {
+  function syncEQ() {
     activeFilters = bands.filter(b => b.enabled);
     preampDb = computeAutoPreamp();
     document.getElementById('preamp-val').textContent = preampDb.toFixed(1) + ' dB';
     rebuildEQChain();
     drawCurve();
     renderBandStrip();
-    if (!skipTableRender) renderTable();
+    updateTableValues();   // soft-update: patch values without rebuilding DOM
+    updateSimpleSliders(); // sync sliders to reflect any __simpleId bands
   }
 
   // ─────────────────────────────────────────────────────────────
@@ -1539,87 +1540,138 @@ Equalizer = (function() {
   // ─────────────────────────────────────────────────────────────
   //  TABLE VIEW
   // ─────────────────────────────────────────────────────────────
+  // ── Full table rebuild (called on tab switch or structural change) ──
   function renderTable() {
     const tbody = document.getElementById('peq-tbody');
     if (!tbody) return;
     tbody.innerHTML = '';
     bands.forEach(band => {
       const tr = document.createElement('tr');
+      tr.className = 'peq-row' + (band.id === selectedBandId ? ' selected-row' : '');
       tr.dataset.id = band.id;
-      if (band.id === selectedBandId) tr.classList.add('selected-row');
-      const gainCls = band.gain > 0.05 ? 'gain-pos' : band.gain < -0.05 ? 'gain-neg' : '';
-
-      tr.innerHTML = `
-        <td><input type="checkbox" class="tbl-enabled" ${band.enabled?'checked':''} data-id="${band.id}"></td>
-        <td>
-          <select class="tbl-type" data-id="${band.id}">
-            <option value="PK"  ${band.type==='PK' ?'selected':''}>PK</option>
-            <option value="LSQ" ${band.type==='LSQ'?'selected':''}>LSQ</option>
-            <option value="HSQ" ${band.type==='HSQ'?'selected':''}>HSQ</option>
-          </select>
-        </td>
-        <td><input class="tbl-input" type="number" step="1" min="20" max="20000"
-              value="${Math.round(band.freq)}" data-field="freq" data-id="${band.id}"></td>
-        <td><input class="tbl-input ${gainCls}" type="number" step="0.1" min="-20" max="20"
-              value="${band.gain.toFixed(1)}" data-field="gain" data-id="${band.id}"></td>
-        <td><input class="tbl-input" type="number" step="0.01" min="0.1" max="10"
-              value="${band.q.toFixed(2)}" data-field="q" data-id="${band.id}"></td>
-        <td><button class="tbl-del" data-id="${band.id}" title="Remove">✕</button></td>`;
-
-      // Click row → select
-      tr.addEventListener('mousedown', e => {
-        if (e.target.tagName === 'BUTTON') return;
-        selectedBandId = band.id;
-        renderTable(); drawCurve(); renderBandStrip();
-      });
-
       tbody.appendChild(tr);
+      _buildTableRow(tr, band);
+    });
+  }
+
+  function _buildTableRow(tr, band) {
+    const gainCls = band.gain > 0.05 ? 'gain-pos' : band.gain < -0.05 ? 'gain-neg' : '';
+    tr.innerHTML = `
+      <td><input type="checkbox" class="tbl-enabled" ${band.enabled ? 'checked' : ''} data-id="${band.id}"></td>
+      <td>
+        <select class="tbl-type" data-id="${band.id}">
+          <option value="PK"  ${band.type==='PK' ?'selected':''}>PK</option>
+          <option value="LSQ" ${band.type==='LSQ'?'selected':''}>LSQ</option>
+          <option value="HSQ" ${band.type==='HSQ'?'selected':''}>HSQ</option>
+        </select>
+      </td>
+      <td><input class="tbl-input" type="number" step="1"    min="20"   max="20000" data-field="freq" data-id="${band.id}" value="${Math.round(band.freq)}"></td>
+      <td><input class="tbl-input ${gainCls}"   type="number" step="0.1" min="-20" max="20"    data-field="gain" data-id="${band.id}" value="${band.gain.toFixed(1)}"></td>
+      <td><input class="tbl-input" type="number" step="0.01"  min="0.1"  max="10"   data-field="q"    data-id="${band.id}" value="${band.q.toFixed(2)}"></td>
+      <td><button class="tbl-del" data-id="${band.id}" title="Remove">✕</button></td>`;
+
+    // Row select
+    tr.addEventListener('mousedown', e => {
+      if (e.target.tagName === 'BUTTON' || e.target.tagName === 'SELECT') return;
+      selectedBandId = band.id;
+      document.querySelectorAll('.peq-row').forEach(r =>
+        r.classList.toggle('selected-row', parseInt(r.dataset.id) === selectedBandId));
+      drawCurve(); renderBandStrip();
     });
 
-    // Wire inputs
-    tbody.querySelectorAll('.tbl-input').forEach(inp => {
-      inp.addEventListener('change', e => {
-        const id    = parseInt(e.target.dataset.id);
-        const field = e.target.dataset.field;
-        const band  = bands.find(b => b.id === id);
-        if (!band) return;
-        let val = parseFloat(e.target.value);
-        if (isNaN(val)) return;
-        if (field === 'freq') val = Math.max(20, Math.min(20000, val));
-        if (field === 'gain') val = Math.max(-20, Math.min(20, Math.round(val*10)/10));
-        if (field === 'q')    val = Math.max(0.1, Math.min(10, Math.round(val*100)/100));
-        band[field] = val;
-        selectedBandId = id;
-        syncEQ(true); // skip re-rendering table to avoid focus loss
-        // Update gain color class
+    // Number inputs: fire on BOTH 'input' (spinner clicks, typing) AND 'change' (blur)
+    tr.querySelectorAll('.tbl-input').forEach(inp => {
+      let lastVal = inp.value;
+      const commit = () => {
+        if (inp.value === lastVal) return; // no actual change
+        lastVal = inp.value;
+        const b = bands.find(x => x.id === parseInt(inp.dataset.id));
+        if (!b) return;
+        let val = parseFloat(inp.value);
+        if (isNaN(val)) { inp.value = lastVal; return; }
+        const field = inp.dataset.field;
+        if (field === 'freq') val = Math.max(20, Math.min(20000, Math.round(val)));
+        if (field === 'gain') val = Math.max(-20, Math.min(20, Math.round(val * 10) / 10));
+        if (field === 'q')    val = Math.max(0.1, Math.min(10,  Math.round(val * 100) / 100));
+        b[field] = val;
+        selectedBandId = b.id;
+        // Update gain color without rebuilding
         if (field === 'gain') {
-          e.target.className = 'tbl-input ' + (val > 0.05 ? 'gain-pos' : val < -0.05 ? 'gain-neg' : '');
+          inp.className = 'tbl-input ' + (val > 0.05 ? 'gain-pos' : val < -0.05 ? 'gain-neg' : '');
+        }
+        // Sync audio + graph + band strip + simple sliders (but NOT table DOM to preserve focus)
+        activeFilters = bands.filter(bx => bx.enabled);
+        preampDb = computeAutoPreamp();
+        document.getElementById('preamp-val').textContent = preampDb.toFixed(1) + ' dB';
+        rebuildEQChain();
+        drawCurve();
+        renderBandStrip();
+        updateSimpleSliders();
+      };
+      inp.addEventListener('input',  commit);
+      inp.addEventListener('change', commit);
+      inp.addEventListener('keydown', e => { if (e.key === 'Enter') { inp.blur(); } });
+    });
+
+    tr.querySelector('.tbl-type').addEventListener('change', e => {
+      const b = bands.find(x => x.id === parseInt(e.target.dataset.id));
+      if (b) { b.type = e.target.value; selectedBandId = b.id; syncEQ(); }
+    });
+
+    tr.querySelector('.tbl-enabled').addEventListener('change', e => {
+      const b = bands.find(x => x.id === parseInt(e.target.dataset.id));
+      if (b) { b.enabled = e.target.checked; syncEQ(); }
+    });
+
+    tr.querySelector('.tbl-del').addEventListener('click', () => {
+      bands = bands.filter(x => x.id !== band.id);
+      if (selectedBandId === band.id) selectedBandId = bands.length ? bands[bands.length-1].id : null;
+      syncEQ();
+      tr.remove(); // remove row directly, no full rebuild needed
+    });
+  }
+
+  // ── Soft-update table values without destroying DOM (preserves focus) ──
+  function updateTableValues() {
+    const tbody = document.getElementById('peq-tbody');
+    if (!tbody) return;
+    // Check if row count matches — if not, do a full rebuild
+    const rows = tbody.querySelectorAll('tr.peq-row');
+    if (rows.length !== bands.length) { renderTable(); return; }
+    rows.forEach((tr, i) => {
+      const band = bands[i];
+      if (!band || parseInt(tr.dataset.id) !== band.id) { renderTable(); return; }
+      tr.classList.toggle('selected-row', band.id === selectedBandId);
+      // Only patch inputs that aren't currently focused
+      tr.querySelectorAll('.tbl-input').forEach(inp => {
+        if (document.activeElement === inp) return;
+        const field = inp.dataset.field;
+        const newVal = field === 'freq' ? String(Math.round(band.freq))
+                     : field === 'gain' ? band.gain.toFixed(1)
+                     : band.q.toFixed(2);
+        if (inp.value !== newVal) inp.value = newVal;
+        if (field === 'gain') {
+          inp.className = 'tbl-input ' + (band.gain > 0.05 ? 'gain-pos' : band.gain < -0.05 ? 'gain-neg' : '');
         }
       });
-      inp.addEventListener('keydown', e => { if (e.key === 'Enter') inp.blur(); });
+      const sel = tr.querySelector('.tbl-type');
+      if (sel && sel.value !== band.type) sel.value = band.type;
+      const cb = tr.querySelector('.tbl-enabled');
+      if (cb && cb.checked !== band.enabled) cb.checked = band.enabled;
     });
+  }
 
-    tbody.querySelectorAll('.tbl-type').forEach(sel => {
-      sel.addEventListener('change', e => {
-        const band = bands.find(b => b.id === parseInt(e.target.dataset.id));
-        if (band) { band.type = e.target.value; selectedBandId = band.id; syncEQ(true); }
-      });
-    });
-
-    tbody.querySelectorAll('.tbl-enabled').forEach(cb => {
-      cb.addEventListener('change', e => {
-        const band = bands.find(b => b.id === parseInt(e.target.dataset.id));
-        if (band) { band.enabled = e.target.checked; syncEQ(true); }
-      });
-    });
-
-    tbody.querySelectorAll('.tbl-del').forEach(btn => {
-      btn.addEventListener('click', e => {
-        const id = parseInt(e.target.dataset.id);
-        bands = bands.filter(b => b.id !== id);
-        if (selectedBandId === id) selectedBandId = bands.length ? bands[bands.length-1].id : null;
-        syncEQ();
-      });
+  // ── Sync simple sliders to reflect current band state ─────────
+  function updateSimpleSliders() {
+    SIMPLE_BANDS.forEach(def => {
+      const slider = document.getElementById('ss-' + def.id);
+      const valEl  = document.getElementById('sv-' + def.id);
+      if (!slider || !valEl) return;
+      const b = getSimpleBand(def.id);
+      const gain = b ? b.gain : 0;
+      if (parseFloat(slider.value) !== gain) slider.value = gain;
+      valEl.textContent = (gain >= 0 ? '+' : '') + gain.toFixed(1) + ' dB';
+      valEl.className = 'simple-slider-val' + (gain > 0 ? ' pos' : gain < 0 ? ' neg' : '');
     });
   }
 
