@@ -432,6 +432,208 @@
     white-space: nowrap;
   }
   #preamp-display span { color: var(--text); }
+
+  /* ── View tabs ── */
+  #eq-view-tabs {
+    display: flex;
+    gap: 2px;
+    padding: 6px 14px 0;
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .view-tab {
+    font-size: 11px;
+    font-family: 'DM Mono', monospace;
+    color: var(--muted);
+    padding: 4px 12px 6px;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: color 0.15s, border-color 0.15s;
+    white-space: nowrap;
+  }
+  .view-tab:hover { color: var(--text); }
+  .view-tab.active { color: var(--accent2); border-bottom-color: var(--accent); }
+
+  /* ── Views ── */
+  .eq-view { display: none; flex: 1; min-height: 0; flex-direction: column; }
+  .eq-view.visible { display: flex; }
+
+  /* ── Graph view: canvas + band strip ── */
+  #view-graph { overflow: hidden; }
+
+  /* ── Table view ── */
+  #view-table {
+    overflow-y: auto;
+    padding: 10px 14px;
+    gap: 10px;
+  }
+  #view-table::-webkit-scrollbar { width: 4px; }
+  #view-table::-webkit-scrollbar-thumb { background: var(--bg4); border-radius:2px; }
+
+  #peq-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+  }
+  #peq-table th {
+    color: var(--muted);
+    font-weight: 400;
+    text-align: left;
+    padding: 4px 6px 8px;
+    border-bottom: 1px solid var(--border);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  #peq-table td { padding: 3px 4px; vertical-align: middle; }
+  #peq-table tr:hover td { background: rgba(255,255,255,0.02); }
+  #peq-table tr.selected-row td { background: rgba(124,106,247,0.1); }
+
+  .tbl-input {
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    padding: 3px 5px;
+    width: 100%;
+    outline: none;
+    transition: border-color 0.12s, background 0.12s;
+    text-align: right;
+  }
+  .tbl-input:hover { border-color: var(--border); background: var(--bg3); }
+  .tbl-input:focus { border-color: var(--accent); background: var(--bg3); }
+  .tbl-input.gain-pos { color: var(--green); }
+  .tbl-input.gain-neg { color: var(--danger); }
+
+  .tbl-type {
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    color: var(--accent2);
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    padding: 3px 4px;
+    cursor: pointer;
+    outline: none;
+    width: 100%;
+    transition: border-color 0.12s, background 0.12s;
+  }
+  .tbl-type:hover { border-color: var(--border); background: var(--bg3); }
+  .tbl-type option { background: var(--bg2); }
+
+  .tbl-del {
+    background: none; border: none;
+    color: var(--muted); cursor: pointer;
+    font-size: 12px; padding: 2px 6px;
+    border-radius: 3px;
+    transition: color 0.1s, background 0.1s;
+  }
+  .tbl-del:hover { color: var(--danger); background: rgba(247,106,106,0.1); }
+
+  .tbl-enabled {
+    width: 14px; height: 14px;
+    accent-color: var(--accent);
+    cursor: pointer;
+  }
+
+  .tbl-add-row {
+    margin-top: 8px;
+  }
+
+  /* ── Q tooltip ── */
+  #q-tooltip {
+    position: fixed;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 4px 9px;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--accent2);
+    pointer-events: none;
+    z-index: 200;
+    display: none;
+    white-space: nowrap;
+  }
+
+  /* ── Simple/Slider EQ ── */
+  #view-simple {
+    overflow-y: auto;
+    padding: 16px 20px;
+    gap: 14px;
+  }
+  #view-simple::-webkit-scrollbar { width: 4px; }
+  #view-simple::-webkit-scrollbar-thumb { background: var(--bg4); border-radius:2px; }
+
+  .simple-note {
+    font-size: 11px;
+    color: var(--muted);
+    line-height: 1.6;
+    padding: 8px 12px;
+    background: var(--bg2);
+    border-radius: 6px;
+    border: 1px solid var(--border);
+  }
+
+  .slider-band {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .slider-band-label {
+    min-width: 80px;
+    flex-shrink: 0;
+  }
+  .slider-band-name {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text);
+  }
+  .slider-band-hz {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    margin-top: 1px;
+  }
+  .simple-slider {
+    -webkit-appearance: none; appearance: none;
+    flex: 1;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--bg4);
+    outline: none;
+    cursor: pointer;
+  }
+  .simple-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    background: var(--accent2);
+    cursor: pointer;
+    border: 2px solid var(--bg);
+    transition: background 0.15s;
+  }
+  .simple-slider::-webkit-slider-thumb:hover { background: var(--accent); }
+  .simple-slider-val {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    width: 52px;
+    text-align: right;
+    flex-shrink: 0;
+    color: var(--muted);
+    transition: color 0.15s;
+  }
+  .simple-slider-val.pos { color: var(--green); }
+  .simple-slider-val.neg { color: var(--danger); }
+
+  .simple-reset {
+    align-self: flex-start;
+    margin-top: 4px;
+  }
 </style>
 </head>
 <body>
@@ -483,7 +685,7 @@
 
     <!-- toolbar -->
     <div id="eq-toolbar">
-      <span class="section-label">PEQ</span>
+      <span class="section-label">EQ</span>
 
       <label class="eq-toggle-pill on" id="eq-pill" title="Toggle EQ bypass">
         <input type="checkbox" id="eq-enabled" checked>
@@ -498,16 +700,116 @@
       <div id="preamp-display">Preamp: <span id="preamp-val">0.0 dB</span></div>
     </div>
 
-    <!-- frequency response canvas -->
-    <div id="eq-canvas-wrap">
-      <canvas id="eq-canvas"></canvas>
+    <!-- view tabs -->
+    <div id="eq-view-tabs">
+      <div class="view-tab active" data-view="graph">Graph</div>
+      <div class="view-tab" data-view="table">Table</div>
+      <div class="view-tab" data-view="simple">Simple</div>
     </div>
 
-    <!-- per-band strip -->
-    <div id="band-strip"></div>
+    <!-- GRAPH VIEW -->
+    <div class="eq-view visible" id="view-graph">
+      <div id="eq-canvas-wrap">
+        <canvas id="eq-canvas"></canvas>
+      </div>
+      <div id="band-strip"></div>
+    </div>
+
+    <!-- TABLE VIEW -->
+    <div class="eq-view" id="view-table">
+      <table id="peq-table">
+        <thead>
+          <tr>
+            <th style="width:20px"></th>
+            <th style="width:44px">Type</th>
+            <th>Freq (Hz)</th>
+            <th>Gain (dB)</th>
+            <th>Q</th>
+            <th style="width:28px"></th>
+          </tr>
+        </thead>
+        <tbody id="peq-tbody"></tbody>
+      </table>
+      <div class="tbl-add-row">
+        <button class="btn" id="btn-tbl-add">+ Add band</button>
+      </div>
+    </div>
+
+    <!-- SIMPLE VIEW -->
+    <div class="eq-view" id="view-simple">
+      <p class="simple-note">Drag sliders to shape your sound. Changes apply in real time. These map to precise parametric filters under the hood.</p>
+
+      <div class="slider-band">
+        <div class="slider-band-label">
+          <div class="slider-band-name">Sub Bass</div>
+          <div class="slider-band-hz">40–60 Hz</div>
+        </div>
+        <input class="simple-slider" type="range" id="ss-subbass" min="-12" max="12" step="0.5" value="0">
+        <div class="simple-slider-val" id="sv-subbass">0.0 dB</div>
+      </div>
+
+      <div class="slider-band">
+        <div class="slider-band-label">
+          <div class="slider-band-name">Bass</div>
+          <div class="slider-band-hz">100–150 Hz</div>
+        </div>
+        <input class="simple-slider" type="range" id="ss-bass" min="-12" max="12" step="0.5" value="0">
+        <div class="simple-slider-val" id="sv-bass">0.0 dB</div>
+      </div>
+
+      <div class="slider-band">
+        <div class="slider-band-label">
+          <div class="slider-band-name">Warmth</div>
+          <div class="slider-band-hz">200–300 Hz</div>
+        </div>
+        <input class="simple-slider" type="range" id="ss-warmth" min="-12" max="12" step="0.5" value="0">
+        <div class="simple-slider-val" id="sv-warmth">0.0 dB</div>
+      </div>
+
+      <div class="slider-band">
+        <div class="slider-band-label">
+          <div class="slider-band-name">Mids</div>
+          <div class="slider-band-hz">800–1k Hz</div>
+        </div>
+        <input class="simple-slider" type="range" id="ss-mids" min="-12" max="12" step="0.5" value="0">
+        <div class="simple-slider-val" id="sv-mids">0.0 dB</div>
+      </div>
+
+      <div class="slider-band">
+        <div class="slider-band-label">
+          <div class="slider-band-name">Presence</div>
+          <div class="slider-band-hz">3–5 kHz</div>
+        </div>
+        <input class="simple-slider" type="range" id="ss-presence" min="-12" max="12" step="0.5" value="0">
+        <div class="simple-slider-val" id="sv-presence">0.0 dB</div>
+      </div>
+
+      <div class="slider-band">
+        <div class="slider-band-label">
+          <div class="slider-band-name">Treble</div>
+          <div class="slider-band-hz">8–10 kHz</div>
+        </div>
+        <input class="simple-slider" type="range" id="ss-treble" min="-12" max="12" step="0.5" value="0">
+        <div class="simple-slider-val" id="sv-treble">0.0 dB</div>
+      </div>
+
+      <div class="slider-band">
+        <div class="slider-band-label">
+          <div class="slider-band-name">Air</div>
+          <div class="slider-band-hz">14–16 kHz</div>
+        </div>
+        <input class="simple-slider" type="range" id="ss-air" min="-12" max="12" step="0.5" value="0">
+        <div class="simple-slider-val" id="sv-air">0.0 dB</div>
+      </div>
+
+      <button class="btn simple-reset" id="btn-simple-reset">Reset all</button>
+    </div>
 
     <div id="msg"></div>
   </div>
+
+  <!-- Q tooltip -->
+  <div id="q-tooltip"></div>
 
   <!-- Import modal -->
   <div id="import-overlay">
@@ -746,13 +1048,14 @@ Equalizer = (function() {
   }
 
   // ── Sync bands → audio chain ──────────────────────────────────
-  function syncEQ() {
+  function syncEQ(skipTableRender) {
     activeFilters = bands.filter(b => b.enabled);
     preampDb = computeAutoPreamp();
     document.getElementById('preamp-val').textContent = preampDb.toFixed(1) + ' dB';
     rebuildEQChain();
     drawCurve();
     renderBandStrip();
+    if (!skipTableRender) renderTable();
   }
 
   // ─────────────────────────────────────────────────────────────
@@ -956,16 +1259,38 @@ Equalizer = (function() {
     if (dragBand) { canvas.style.cursor = 'crosshair'; dragBand = null; }
   });
 
-  // Scroll on handle = adjust Q
+  // ── Scroll on canvas handle = adjust Q, with tooltip ────────
+  const qTooltip = document.getElementById('q-tooltip');
+  let qTooltipTimer = null;
+
+  function showQTooltip(x, y, band) {
+    qTooltip.textContent = 'Q ' + band.q.toFixed(2) + '  (scroll to adjust)';
+    qTooltip.style.left = (x + 14) + 'px';
+    qTooltip.style.top  = (y - 28) + 'px';
+    qTooltip.style.display = 'block';
+    clearTimeout(qTooltipTimer);
+    qTooltipTimer = setTimeout(() => { qTooltip.style.display = 'none'; }, 1400);
+  }
+
+  canvas.addEventListener('mousemove', e => {
+    if (dragBand) return;
+    const rect = canvas.getBoundingClientRect();
+    const hit = hitTest(e.clientX - rect.left, e.clientY - rect.top);
+    canvas.style.cursor = hit ? 'grab' : 'crosshair';
+  });
+
   canvas.addEventListener('wheel', e => {
     const rect = canvas.getBoundingClientRect();
     const cx = e.clientX - rect.left, cy = e.clientY - rect.top;
     const hit = hitTest(cx, cy);
     if (!hit) return;
     e.preventDefault();
-    const delta = e.deltaY > 0 ? -0.05 : 0.05;
-    hit.q = Math.max(0.1, Math.min(10, Math.round((hit.q + delta)*100)/100));
+    // Shift = fine (0.01 steps), normal = 0.05 steps
+    const step = e.shiftKey ? 0.01 : 0.05;
+    const delta = e.deltaY > 0 ? -step : step;
+    hit.q = Math.max(0.1, Math.min(10, Math.round((hit.q + delta) * 100) / 100));
     selectedBandId = hit.id;
+    showQTooltip(e.clientX, e.clientY, hit);
     syncEQ();
   }, { passive: false });
 
@@ -1211,6 +1536,175 @@ Equalizer = (function() {
     renderLibrary(filtered);
   });
 
+  // ─────────────────────────────────────────────────────────────
+  //  TABLE VIEW
+  // ─────────────────────────────────────────────────────────────
+  function renderTable() {
+    const tbody = document.getElementById('peq-tbody');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+    bands.forEach(band => {
+      const tr = document.createElement('tr');
+      tr.dataset.id = band.id;
+      if (band.id === selectedBandId) tr.classList.add('selected-row');
+      const gainCls = band.gain > 0.05 ? 'gain-pos' : band.gain < -0.05 ? 'gain-neg' : '';
+
+      tr.innerHTML = `
+        <td><input type="checkbox" class="tbl-enabled" ${band.enabled?'checked':''} data-id="${band.id}"></td>
+        <td>
+          <select class="tbl-type" data-id="${band.id}">
+            <option value="PK"  ${band.type==='PK' ?'selected':''}>PK</option>
+            <option value="LSQ" ${band.type==='LSQ'?'selected':''}>LSQ</option>
+            <option value="HSQ" ${band.type==='HSQ'?'selected':''}>HSQ</option>
+          </select>
+        </td>
+        <td><input class="tbl-input" type="number" step="1" min="20" max="20000"
+              value="${Math.round(band.freq)}" data-field="freq" data-id="${band.id}"></td>
+        <td><input class="tbl-input ${gainCls}" type="number" step="0.1" min="-20" max="20"
+              value="${band.gain.toFixed(1)}" data-field="gain" data-id="${band.id}"></td>
+        <td><input class="tbl-input" type="number" step="0.01" min="0.1" max="10"
+              value="${band.q.toFixed(2)}" data-field="q" data-id="${band.id}"></td>
+        <td><button class="tbl-del" data-id="${band.id}" title="Remove">✕</button></td>`;
+
+      // Click row → select
+      tr.addEventListener('mousedown', e => {
+        if (e.target.tagName === 'BUTTON') return;
+        selectedBandId = band.id;
+        renderTable(); drawCurve(); renderBandStrip();
+      });
+
+      tbody.appendChild(tr);
+    });
+
+    // Wire inputs
+    tbody.querySelectorAll('.tbl-input').forEach(inp => {
+      inp.addEventListener('change', e => {
+        const id    = parseInt(e.target.dataset.id);
+        const field = e.target.dataset.field;
+        const band  = bands.find(b => b.id === id);
+        if (!band) return;
+        let val = parseFloat(e.target.value);
+        if (isNaN(val)) return;
+        if (field === 'freq') val = Math.max(20, Math.min(20000, val));
+        if (field === 'gain') val = Math.max(-20, Math.min(20, Math.round(val*10)/10));
+        if (field === 'q')    val = Math.max(0.1, Math.min(10, Math.round(val*100)/100));
+        band[field] = val;
+        selectedBandId = id;
+        syncEQ(true); // skip re-rendering table to avoid focus loss
+        // Update gain color class
+        if (field === 'gain') {
+          e.target.className = 'tbl-input ' + (val > 0.05 ? 'gain-pos' : val < -0.05 ? 'gain-neg' : '');
+        }
+      });
+      inp.addEventListener('keydown', e => { if (e.key === 'Enter') inp.blur(); });
+    });
+
+    tbody.querySelectorAll('.tbl-type').forEach(sel => {
+      sel.addEventListener('change', e => {
+        const band = bands.find(b => b.id === parseInt(e.target.dataset.id));
+        if (band) { band.type = e.target.value; selectedBandId = band.id; syncEQ(true); }
+      });
+    });
+
+    tbody.querySelectorAll('.tbl-enabled').forEach(cb => {
+      cb.addEventListener('change', e => {
+        const band = bands.find(b => b.id === parseInt(e.target.dataset.id));
+        if (band) { band.enabled = e.target.checked; syncEQ(true); }
+      });
+    });
+
+    tbody.querySelectorAll('.tbl-del').forEach(btn => {
+      btn.addEventListener('click', e => {
+        const id = parseInt(e.target.dataset.id);
+        bands = bands.filter(b => b.id !== id);
+        if (selectedBandId === id) selectedBandId = bands.length ? bands[bands.length-1].id : null;
+        syncEQ();
+      });
+    });
+  }
+
+  document.getElementById('btn-tbl-add').addEventListener('click', () => {
+    addBand({ freq: 1000, gain: 0, q: 1.0, type: 'PK' });
+  });
+
+  // ─────────────────────────────────────────────────────────────
+  //  SIMPLE / SLIDER EQ
+  // ─────────────────────────────────────────────────────────────
+  // Each slider maps to a fixed band in the `bands` array via tag
+  const SIMPLE_BANDS = [
+    { id: 'subbass',  label: 'Sub Bass',  freq:  50, q: 0.7, type: 'PK'  },
+    { id: 'bass',     label: 'Bass',      freq: 120, q: 1.0, type: 'PK'  },
+    { id: 'warmth',   label: 'Warmth',    freq: 250, q: 1.0, type: 'PK'  },
+    { id: 'mids',     label: 'Mids',      freq: 900, q: 0.8, type: 'PK'  },
+    { id: 'presence', label: 'Presence',  freq:4000, q: 1.2, type: 'PK'  },
+    { id: 'treble',   label: 'Treble',    freq:9000, q: 1.0, type: 'PK'  },
+    { id: 'air',      label: 'Air',       freq:15000,q: 1.0, type: 'HSQ' },
+  ];
+
+  // Simple EQ maintains its own parallel set of bands tagged with __simple__
+  // so they don't clash with imported PEQ bands
+  function getSimpleBand(sid) {
+    return bands.find(b => b.__simpleId === sid);
+  }
+  function ensureSimpleBand(sid) {
+    let b = getSimpleBand(sid);
+    if (!b) {
+      const def = SIMPLE_BANDS.find(s => s.id === sid);
+      b = { id: nextBandId++, type: def.type, freq: def.freq, gain: 0, q: def.q, enabled: true, __simpleId: sid };
+      bands.push(b);
+    }
+    return b;
+  }
+
+  SIMPLE_BANDS.forEach(def => {
+    const slider = document.getElementById('ss-' + def.id);
+    const valEl  = document.getElementById('sv-' + def.id);
+    if (!slider || !valEl) return;
+
+    slider.addEventListener('input', () => {
+      const gain = parseFloat(slider.value);
+      valEl.textContent = (gain >= 0 ? '+' : '') + gain.toFixed(1) + ' dB';
+      valEl.className = 'simple-slider-val' + (gain > 0 ? ' pos' : gain < 0 ? ' neg' : '');
+
+      if (gain === 0) {
+        // Remove the band if gain is zero (keep things clean)
+        const b = getSimpleBand(def.id);
+        if (b) { bands = bands.filter(x => x !== b); }
+      } else {
+        const b = ensureSimpleBand(def.id);
+        b.gain = gain;
+      }
+      syncEQ();
+    });
+  });
+
+  document.getElementById('btn-simple-reset').addEventListener('click', () => {
+    SIMPLE_BANDS.forEach(def => {
+      const slider = document.getElementById('ss-' + def.id);
+      const valEl  = document.getElementById('sv-' + def.id);
+      if (slider) slider.value = 0;
+      if (valEl)  { valEl.textContent = '0.0 dB'; valEl.className = 'simple-slider-val'; }
+      bands = bands.filter(b => !b.__simpleId);
+    });
+    syncEQ();
+  });
+
+  // ─────────────────────────────────────────────────────────────
+  //  VIEW TABS
+  // ─────────────────────────────────────────────────────────────
+  let currentView = 'graph';
+  document.querySelectorAll('.view-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      currentView = tab.dataset.view;
+      document.querySelectorAll('.view-tab').forEach(t => t.classList.toggle('active', t === tab));
+      document.querySelectorAll('.eq-view').forEach(v => {
+        v.classList.toggle('visible', v.id === 'view-' + currentView);
+      });
+      if (currentView === 'graph') { setTimeout(resizeCanvas, 10); }
+      if (currentView === 'table') { renderTable(); }
+    });
+  });
+
   // ── EQ toolbar controls ──────────────────────────────────────
   const eqPill = document.getElementById('eq-pill');
   const eqCheckbox = document.getElementById('eq-enabled');
@@ -1230,7 +1724,14 @@ Equalizer = (function() {
   document.getElementById('btn-clear-eq').addEventListener('click', () => {
     bands = []; selectedBandId = null; activeFilters = []; preampDb = 0;
     document.getElementById('preamp-val').textContent = '0.0 dB';
-    rebuildEQChain(); drawCurve(); renderBandStrip();
+    // Also reset simple sliders
+    SIMPLE_BANDS.forEach(def => {
+      const s = document.getElementById('ss-' + def.id);
+      const v = document.getElementById('sv-' + def.id);
+      if (s) s.value = 0;
+      if (v) { v.textContent = '0.0 dB'; v.className = 'simple-slider-val'; }
+    });
+    rebuildEQChain(); drawCurve(); renderBandStrip(); renderTable();
     showMsg('EQ cleared.', '');
   });
 
@@ -1267,7 +1768,6 @@ Equalizer = (function() {
     if (e.code === 'ArrowLeft')  { audioEl.currentTime = Math.max(0, audioEl.currentTime - 10); }
     if (e.code === 'ArrowUp')    { const s = document.getElementById('vol-slider'); s.value = Math.min(1.5, parseFloat(s.value) + 0.05); if (makeupNode) makeupNode.gain.value = parseFloat(s.value); }
     if (e.code === 'ArrowDown')  { const s = document.getElementById('vol-slider'); s.value = Math.max(0, parseFloat(s.value) - 0.05); if (makeupNode) makeupNode.gain.value = parseFloat(s.value); }
-    // Delete selected band
     if ((e.code === 'Backspace' || e.code === 'Delete') && selectedBandId !== null) {
       bands = bands.filter(b => b.id !== selectedBandId);
       selectedBandId = bands.length ? bands[bands.length-1].id : null;
