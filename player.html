@@ -634,6 +634,150 @@
     align-self: flex-start;
     margin-top: 4px;
   }
+
+  /* ── Sources panel ── */
+  #sidebar-header {
+    display: flex;
+    align-items: center;
+    padding: 7px 10px 7px 12px;
+    border-bottom: 1px solid var(--border);
+    gap: 6px;
+    flex-shrink: 0;
+  }
+  #sidebar-header .lib-title {
+    font-size: 11px;
+    font-family: 'DM Mono', monospace;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    flex: 1;
+  }
+  #btn-manage-sources {
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 11px;
+    padding: 3px 8px;
+    font-family: 'DM Sans', sans-serif;
+    transition: color 0.12s, border-color 0.12s;
+  }
+  #btn-manage-sources:hover { color: var(--text); border-color: var(--muted); }
+  #btn-refresh-lib {
+    background: none;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 13px;
+    padding: 2px 4px;
+    border-radius: 3px;
+    transition: color 0.12s;
+    line-height: 1;
+  }
+  #btn-refresh-lib:hover { color: var(--text); }
+
+  /* sources overlay */
+  /* ── Sources overlay ── */
+  #sources-overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.65);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+  }
+  #sources-overlay.open { display: flex; }
+  #sources-modal {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    width: 560px;
+    max-width: 96vw;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  #sources-modal h3 { font-size: 14px; font-weight: 500; }
+
+  /* mode tabs inside modal */
+  .src-tabs { display: flex; gap: 2px; border-bottom: 1px solid var(--border); padding-bottom: 0; }
+  .src-tab {
+    font-size: 11px; font-family: 'DM Mono', monospace;
+    color: var(--muted); padding: 5px 14px 7px;
+    cursor: pointer; border-bottom: 2px solid transparent;
+    transition: color 0.12s, border-color 0.12s;
+  }
+  .src-tab:hover { color: var(--text); }
+  .src-tab.active { color: var(--accent2); border-bottom-color: var(--accent); }
+  .src-pane { display: none; flex-direction: column; gap: 12px; }
+  .src-pane.visible { display: flex; }
+
+  /* existing sources list */
+  #sources-list { display: flex; flex-direction: column; gap: 6px; }
+  .source-row {
+    display: flex; align-items: center; gap: 10px;
+    background: var(--bg3); border: 1px solid var(--border);
+    border-radius: 7px; padding: 9px 12px;
+  }
+  .source-row.err { border-color: rgba(247,106,106,0.4); }
+  .source-row.session { border-color: rgba(124,106,247,0.3); }
+  .source-icon { font-size: 14px; flex-shrink: 0; }
+  .source-info { flex: 1; min-width: 0; }
+  .source-path {
+    font-family: 'DM Mono', monospace; font-size: 11px; color: var(--text);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .source-count { font-size: 10px; color: var(--muted); margin-top: 2px; }
+  .source-remove {
+    background: none; border: none; color: var(--muted);
+    cursor: pointer; font-size: 13px; padding: 2px 6px;
+    border-radius: 3px; transition: color 0.1s, background 0.1s; flex-shrink: 0;
+  }
+  .source-remove:hover { color: var(--danger); background: rgba(247,106,106,0.1); }
+  .source-empty { text-align: center; color: var(--muted); font-size: 12px; padding: 16px 0; font-style: italic; }
+
+  /* path input pane */
+  #add-source-row { display: flex; gap: 8px; }
+  #source-path-input {
+    flex: 1; background: var(--bg3); border: 1px solid var(--border);
+    border-radius: 6px; color: var(--text); font-family: 'DM Mono', monospace;
+    font-size: 12px; padding: 8px 11px; outline: none;
+    transition: border-color 0.15s; min-width: 0;
+  }
+  #source-path-input:focus { border-color: var(--accent); }
+  #source-path-input::placeholder { color: var(--muted); font-style: italic; }
+
+  /* drag-drop pane */
+  #drop-zone {
+    border: 2px dashed var(--border);
+    border-radius: 10px;
+    padding: 32px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+    position: relative;
+  }
+  #drop-zone:hover, #drop-zone.dragover {
+    border-color: var(--accent);
+    background: rgba(124,106,247,0.05);
+  }
+  #drop-zone input[type=file] {
+    position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+  }
+  .drop-icon { font-size: 32px; margin-bottom: 10px; }
+  .drop-title { font-size: 13px; font-weight: 500; color: var(--text); margin-bottom: 4px; }
+  .drop-sub { font-size: 11px; color: var(--muted); line-height: 1.6; }
+  .drop-sub strong { color: var(--accent2); }
+  #drop-progress {
+    font-size: 11px; font-family: 'DM Mono', monospace; color: var(--accent2);
+    min-height: 16px; text-align: center;
+  }
+
+  #source-msg { font-size: 11px; min-height: 16px; font-family: 'DM Mono', monospace; }
+  #source-msg.ok    { color: var(--green); }
+  #source-msg.error { color: var(--danger); }
 </style>
 </head>
 <body>
@@ -672,11 +816,69 @@
 
   <!-- library sidebar -->
   <div id="sidebar">
+    <div id="sidebar-header">
+      <span class="lib-title">Library</span>
+      <button id="btn-refresh-lib" title="Refresh library">↻</button>
+      <button id="btn-manage-sources">+ Sources</button>
+    </div>
     <div id="search-wrap">
       <input id="search" type="text" placeholder="Search library…">
     </div>
     <div id="library">
       <div id="lib-status">Loading library…</div>
+    </div>
+  </div>
+
+  <!-- Sources modal -->
+  <div id="sources-overlay">
+    <div id="sources-modal">
+      <h3>🎵 Music Sources</h3>
+
+      <!-- mode tabs -->
+      <div class="src-tabs">
+        <div class="src-tab active" data-pane="pane-pick">📂 Pick / Drop</div>
+        <div class="src-tab" data-pane="pane-path">⌨ Enter path</div>
+        <div class="src-tab" data-pane="pane-current">📋 Current sources</div>
+      </div>
+
+      <!-- PANE 1: folder picker + drag-drop (session, browser-side) -->
+      <div class="src-pane visible" id="pane-pick">
+        <div id="drop-zone">
+          <input type="file" id="folder-picker" webkitdirectory multiple accept="audio/*">
+          <div class="drop-icon">🎵</div>
+          <div class="drop-title">Drop a folder here, or click to browse</div>
+          <div class="drop-sub">
+            Works on <strong>any device</strong> — phone, tablet, desktop.<br>
+            Files are loaded directly in the browser for this session.<br>
+            <span style="color:var(--muted)">To make a folder permanent, use "Enter path" (desktop only).</span>
+          </div>
+        </div>
+        <div id="drop-progress"></div>
+      </div>
+
+      <!-- PANE 2: type a path (permanent, server-side) -->
+      <div class="src-pane" id="pane-path">
+        <p style="font-size:11px;color:var(--muted);line-height:1.6;margin:0">
+          Type the full path to a folder on the machine running server.js.
+          It will be scanned permanently and saved to <code style="color:var(--accent2)">config.json</code>.
+        </p>
+        <div id="add-source-row">
+          <input id="source-path-input" type="text" placeholder="/Users/you/Music  or  C:\Users\you\Music">
+          <button class="btn primary" id="btn-add-source">Add</button>
+        </div>
+      </div>
+
+      <!-- PANE 3: current permanent sources -->
+      <div class="src-pane" id="pane-current">
+        <div id="sources-list">
+          <div class="source-empty">Loading…</div>
+        </div>
+      </div>
+
+      <div id="source-msg"></div>
+      <div style="display:flex;justify-content:flex-end">
+        <button class="btn" id="btn-sources-close">Done</button>
+      </div>
     </div>
   </div>
 
@@ -1366,26 +1568,44 @@ Equalizer = (function() {
   }
 
   // ── Library ───────────────────────────────────────────────────
-  async function loadLibrary() {
+  async function loadLibrary(force) {
     const libEl = document.getElementById('library');
+    libEl.innerHTML = '<div id="lib-status">Loading…</div>';
     try {
-      const res = await fetch(`${SERVER}/music`);
-      if (!res.ok) throw new Error('Server error');
-      allFiles = await res.json();
+      const res  = await fetch(`${SERVER}/music` + (force ? '?refresh=1' : ''));
+      if (!res.ok) throw new Error('Server error ' + res.status);
+      const data = await res.json();
+
+      if (data.error === 'no_sources') {
+        libEl.innerHTML = `<div id="lib-status">
+          No music sources yet.<br>
+          <span style="font-size:11px;color:var(--muted)">Click <strong style="color:var(--text)">+ Sources</strong> above to add a folder.</span>
+        </div>`;
+        return;
+      }
+
+      allFiles = data.tracks || [];
       playlist = [...allFiles];
       renderLibrary(allFiles);
     } catch (e) {
       libEl.innerHTML = `<div id="lib-status" style="color:var(--danger)">
         ⚠ Cannot reach server.<br>
-        <span style="font-size:11px">Make sure server.js is running:<br>
-        <code>node server.js</code></span></div>`;
+        <span style="font-size:11px">Run: <code>node server.js</code></span>
+      </div>`;
     }
+  }
+
+  // Strip the source-index prefix for display: "0/Artist/Song.mp3" → "Artist/Song.mp3"
+  function displayPath(prefixedPath) {
+    const slash = prefixedPath.indexOf('/');
+    return slash === -1 ? prefixedPath : prefixedPath.slice(slash + 1);
   }
 
   function groupByFolder(files) {
     const groups = {};
     for (const f of files) {
-      const parts = f.split('/');
+      const disp  = displayPath(f);
+      const parts = disp.split('/');
       const folder = parts.length > 1 ? parts.slice(0, -1).join(' / ') : '—';
       const name   = parts[parts.length - 1];
       if (!groups[folder]) groups[folder] = [];
@@ -1395,32 +1615,10 @@ Equalizer = (function() {
   }
 
   function renderLibrary(files) {
-    const libEl = document.getElementById('library');
-    if (files.length === 0) {
-      libEl.innerHTML = '<div id="lib-status">No tracks found.</div>';
-      return;
-    }
-    playlist = files;
-    const groups = groupByFolder(files);
-    let html = '';
-    for (const [folder, tracks] of Object.entries(groups)) {
-      html += `<div class="lib-folder">${folder}</div>`;
-      for (const t of tracks) {
-        const idx = allFiles.indexOf(t.path);
-        html += `<div class="lib-track" data-path="${t.path}" data-idx="${idx}">${t.name}</div>`;
-      }
-    }
-    libEl.innerHTML = html;
-
-    libEl.querySelectorAll('.lib-track').forEach(el => {
-      el.addEventListener('click', () => {
-        const p = el.dataset.path;
-        currentIdx = playlist.indexOf(p);
-        if (currentIdx === -1) { playlist = files; currentIdx = playlist.indexOf(p); }
-        playTrack(p);
-      });
-    });
-    highlightCurrent();
+    // Always render mixed so session tracks are preserved alongside server tracks
+    renderLibraryMixed(files || [], sessionTracks);
+    // Keep playlist: server tracks + session track ids
+    playlist = [...(files || []), ...sessionTracks.map(t => t.id)];
   }
 
   function highlightCurrent() {
@@ -1429,16 +1627,470 @@ Equalizer = (function() {
     });
   }
 
+  // ─────────────────────────────────────────────────────────────
+  //  SOURCES MANAGEMENT
+  // ─────────────────────────────────────────────────────────────
+
+  const AUDIO_EXTS_RE = /\.(mp3|flac|m4a|wav|aac|ogg|opus|aiff|wma)$/i;
+  let sessionTracks  = [];
+  let sessionCounter = 0;
+  // dirHandles: array of { handle: FileSystemDirectoryHandle, name: string }
+  let dirHandles = [];
+
+  // ── IndexedDB: persist FileSystemDirectoryHandle objects ──────
+  // Browsers allow storing handles in IDB (not localStorage/cookies).
+  const IDB_NAME = 'squiglink-player', IDB_STORE = 'dir-handles', IDB_VER = 1;
+  let idb = null;
+
+  async function openIDB() {
+    if (idb) return idb;
+    return new Promise((res, rej) => {
+      const req = indexedDB.open(IDB_NAME, IDB_VER);
+      req.onupgradeneeded = e => e.target.result.createObjectStore(IDB_STORE, { keyPath: 'name' });
+      req.onsuccess = e => { idb = e.target.result; res(idb); };
+      req.onerror   = e => rej(e.target.error);
+    });
+  }
+
+  async function idbSaveHandle(name, handle) {
+    const db = await openIDB();
+    return new Promise((res, rej) => {
+      const tx = db.transaction(IDB_STORE, 'readwrite');
+      tx.objectStore(IDB_STORE).put({ name, handle });
+      tx.oncomplete = res; tx.onerror = e => rej(e.target.error);
+    });
+  }
+
+  async function idbGetAllHandles() {
+    const db = await openIDB();
+    return new Promise((res, rej) => {
+      const tx  = db.transaction(IDB_STORE, 'readonly');
+      const req = tx.objectStore(IDB_STORE).getAll();
+      req.onsuccess = e => res(e.target.result);
+      req.onerror   = e => rej(e.target.error);
+    });
+  }
+
+  async function idbDeleteHandle(name) {
+    const db = await openIDB();
+    return new Promise((res, rej) => {
+      const tx = db.transaction(IDB_STORE, 'readwrite');
+      tx.objectStore(IDB_STORE).delete(name);
+      tx.oncomplete = res; tx.onerror = e => rej(e.target.error);
+    });
+  }
+
+  // ── Load a directory handle into session tracks ───────────────
+  async function loadHandleIntoSession(handle, savedName) {
+    const folderName = savedName || handle.name;
+    // Remove any existing tracks from this folder first
+    sessionTracks = sessionTracks.filter(t => t.dirName !== folderName);
+
+    const files = [];
+    async function walk(dirHandle, path) {
+      for await (const entry of dirHandle.values()) {
+        if (entry.kind === 'file' && AUDIO_EXTS_RE.test(entry.name)) {
+          const file = await entry.getFile();
+          Object.defineProperty(file, 'webkitRelativePath', { value: path + entry.name, configurable: true });
+          files.push({ file, path });
+        } else if (entry.kind === 'directory') {
+          await walk(entry, path + entry.name + '/');
+        }
+      }
+    }
+    await walk(handle, '');
+
+    files.forEach(({ file, path }) => {
+      const id     = 'session:' + (sessionCounter++);
+      const folder = path ? folderName + ' / ' + path.slice(0, -1) : folderName;
+      const blob   = URL.createObjectURL(file);
+      sessionTracks.push({ id, name: file.name.replace(/\.[^.]+$/, ''), folder, blobUrl: blob, file, dirName: folderName });
+    });
+
+    return files.length;
+  }
+
+  // ── Restore saved handles on startup ─────────────────────────
+  async function restorePersistedHandles() {
+    let saved;
+    try { saved = await idbGetAllHandles(); }
+    catch (e) { return; }
+    if (!saved.length) return;
+
+    for (const { name, handle } of saved) {
+      // Check permission without prompting yet
+      let perm = await handle.queryPermission({ mode: 'read' });
+      if (perm === 'granted') {
+        dirHandles.push({ handle, name });
+        await loadHandleIntoSession(handle, name);
+      } else {
+        // Mark as needing re-grant
+        dirHandles.push({ handle, name, needsGrant: true });
+      }
+    }
+
+    mergeSessionIntoLibrary();
+    renderSavedHandlesBanner();
+  }
+
+  // Show a banner if any handles need re-granting
+  function renderSavedHandlesBanner() {
+    const needs = dirHandles.filter(d => d.needsGrant);
+    const libEl = document.getElementById('library');
+    const existing = document.getElementById('regrant-banner');
+    if (existing) existing.remove();
+    if (!needs.length) return;
+
+    const banner = document.createElement('div');
+    banner.id = 'regrant-banner';
+    banner.style.cssText = 'padding:10px 12px;background:rgba(124,106,247,0.12);border-bottom:1px solid rgba(124,106,247,0.25);font-size:11px;color:var(--accent2);cursor:pointer;';
+    banner.innerHTML = `🔐 Click to restore <strong>${needs.length}</strong> saved folder${needs.length>1?'s':''} (browser needs permission)`;
+    banner.addEventListener('click', async () => {
+      for (const d of needs) {
+        try {
+          const perm = await d.handle.requestPermission({ mode: 'read' });
+          if (perm === 'granted') {
+            d.needsGrant = false;
+            await loadHandleIntoSession(d.handle, d.name);
+          }
+        } catch(e) {}
+      }
+      mergeSessionIntoLibrary();
+      renderSavedHandlesBanner();
+    });
+    libEl.parentElement.insertBefore(banner, libEl);
+  }
+
+  // ── Add files from a FileList (drag-drop / input fallback) ────
+  function addSessionFiles(fileList) {
+    const files = Array.from(fileList).filter(f => AUDIO_EXTS_RE.test(f.name));
+    if (!files.length) { setSourceMsg('No audio files found in selection.', 'error'); return 0; }
+
+    files.forEach(file => {
+      const id     = 'session:' + (sessionCounter++);
+      const folder = (file.webkitRelativePath
+        ? file.webkitRelativePath.split('/').slice(0, -1).join(' / ')
+        : 'Session') || 'Session';
+      const blob   = URL.createObjectURL(file);
+      sessionTracks.push({ id, name: file.name.replace(/\.[^.]+$/, ''), folder, blobUrl: blob, file });
+    });
+
+    mergeSessionIntoLibrary();
+    return files.length;
+  }
+
+  function mergeSessionIntoLibrary() {
+    // Re-render library showing both server tracks + session tracks
+    renderLibraryMixed(allFiles.filter(f => !f.startsWith('session:')), sessionTracks);
+  }
+
+  function renderLibraryMixed(serverFiles, sessionFiles) {
+    const libEl = document.getElementById('library');
+    if (!serverFiles.length && !sessionFiles.length) {
+      libEl.innerHTML = '<div id="lib-status">No tracks found. Add a source above.</div>';
+      return;
+    }
+
+    // Group server files by folder
+    const groups = groupByFolder(serverFiles);
+    let html = '';
+    for (const [folder, tracks] of Object.entries(groups)) {
+      html += `<div class="lib-folder">${folder}</div>`;
+      for (const t of tracks) {
+        html += `<div class="lib-track" data-path="${t.path}">${t.name}</div>`;
+      }
+    }
+
+    // Session tracks grouped
+    if (sessionFiles.length) {
+      const sessionGroups = {};
+      sessionFiles.forEach(t => {
+        if (!sessionGroups[t.folder]) sessionGroups[t.folder] = [];
+        sessionGroups[t.folder].push(t);
+      });
+      for (const [folder, tracks] of Object.entries(sessionGroups)) {
+        html += `<div class="lib-folder" style="color:var(--accent2)">⚡ ${folder}</div>`;
+        for (const t of tracks) {
+          html += `<div class="lib-track" data-path="${t.id}">${t.name}</div>`;
+        }
+      }
+    }
+
+    libEl.innerHTML = html;
+    libEl.querySelectorAll('.lib-track').forEach(el => {
+      el.addEventListener('click', () => {
+        const p = el.dataset.path;
+        currentIdx = playlist.indexOf(p);
+        if (currentIdx === -1) { currentIdx = 0; }
+        playTrack(p);
+      });
+    });
+    highlightCurrent();
+  }
+
+  // ── Modal tab switching ───────────────────────────────────────
+  const sourcesOverlay = document.getElementById('sources-overlay');
+
+  document.querySelectorAll('.src-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.src-tab').forEach(t => t.classList.toggle('active', t === tab));
+      document.querySelectorAll('.src-pane').forEach(p => p.classList.toggle('visible', p.id === tab.dataset.pane));
+      if (tab.dataset.pane === 'pane-current') loadSources();
+    });
+  });
+
+  // ── Open / close modal ────────────────────────────────────────
+  document.getElementById('btn-manage-sources').addEventListener('click', () => {
+    sourcesOverlay.classList.add('open');
+    // Default to pick pane; load current sources in background
+    loadSources();
+  });
+  document.getElementById('btn-sources-close').addEventListener('click', () => sourcesOverlay.classList.remove('open'));
+  sourcesOverlay.addEventListener('click', e => { if (e.target === sourcesOverlay) sourcesOverlay.classList.remove('open'); });
+
+  // ── Drop zone click → File System Access API or fallback ──────
+  const dropZone     = document.getElementById('drop-zone');
+  const folderPicker = document.getElementById('folder-picker');
+  const dropProgress = document.getElementById('drop-progress');
+  const hasFSAPI     = typeof window.showDirectoryPicker === 'function';
+
+  if (hasFSAPI) {
+    dropZone.querySelector('.drop-sub').innerHTML =
+      'Folder is <strong>remembered across sessions</strong> (Chrome/Edge/Safari).<br>' +
+      '<span style="color:var(--muted)">Firefox: drag-and-drop works but won\'t persist.</span>';
+  }
+
+  dropZone.addEventListener('click', async e => {
+    if (e.target === folderPicker) return;
+    if (hasFSAPI) {
+      try {
+        const handle = await window.showDirectoryPicker({ mode: 'read' });
+        dropProgress.textContent = 'Scanning…';
+        const n = await loadHandleIntoSession(handle, handle.name);
+        if (!dirHandles.find(d => d.name === handle.name)) {
+          dirHandles.push({ handle, name: handle.name });
+          await idbSaveHandle(handle.name, handle);
+        }
+        mergeSessionIntoLibrary();
+        dropProgress.textContent = `✓ ${n} tracks — remembered for next time`;
+        setSourceMsg(`✓ ${n} tracks from "${handle.name}" saved permanently`, 'ok');
+        setTimeout(() => sourcesOverlay.classList.remove('open'), 1400);
+      } catch (err) {
+        if (err.name !== 'AbortError') setSourceMsg('Error: ' + err.message, 'error');
+      }
+    } else {
+      folderPicker.click();
+    }
+  });
+
+  folderPicker.addEventListener('change', () => {
+    const n = addSessionFiles(folderPicker.files);
+    if (n) {
+      dropProgress.textContent = `✓ ${n} tracks loaded (session only)`;
+      setSourceMsg(`✓ ${n} tracks added for this session`, 'ok');
+      setTimeout(() => sourcesOverlay.classList.remove('open'), 1200);
+    }
+  });
+
+  dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+  dropZone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropZone.classList.remove('dragover');
+    const items = e.dataTransfer.items;
+    const allFiles2 = [];
+    let pending = 0;
+
+    function scanEntry(entry, path) {
+      path = path || '';
+      if (entry.isFile) {
+        pending++;
+        entry.getFile(file => {
+          if (AUDIO_EXTS_RE.test(file.name)) {
+            // Attach relative path so folder grouping works
+            Object.defineProperty(file, 'webkitRelativePath', { value: path + file.name });
+            allFiles2.push(file);
+          }
+          pending--;
+          if (pending === 0) finish();
+        });
+      } else if (entry.isDirectory) {
+        const reader = entry.createReader();
+        const readAll = () => reader.readEntries(entries => {
+          if (!entries.length) return;
+          entries.forEach(e2 => scanEntry(e2, path + entry.name + '/'));
+          readAll();
+        });
+        readAll();
+      }
+    }
+
+    if (items && items.length) {
+      for (const item of items) {
+        const entry = item.webkitGetAsEntry ? item.webkitGetAsEntry() : null;
+        if (entry) scanEntry(entry);
+        else if (item.kind === 'file') allFiles2.push(item.getAsFile());
+      }
+      // fallback finish if no directories
+      if (pending === 0) finish();
+    }
+
+    function finish() {
+      if (!allFiles2.length) { dropProgress.textContent = 'No audio files found.'; return; }
+      const dt = new DataTransfer();
+      allFiles2.forEach(f => dt.items.add(f));
+      const n = addSessionFiles(dt.files);
+      if (n) {
+        dropProgress.textContent = `✓ ${n} tracks loaded`;
+        setSourceMsg(`✓ ${n} tracks added for this session`, 'ok');
+        setTimeout(() => sourcesOverlay.classList.remove('open'), 1200);
+      }
+    }
+  });
+
+  // ── Permanent path entry ──────────────────────────────────────
+  async function loadSources() {
+    const listEl = document.getElementById('sources-list');
+    listEl.innerHTML = '<div class="source-empty">Loading…</div>';
+    try {
+      const res  = await fetch(`${SERVER}/config`);
+      const data = await res.json();
+      renderSources(data.dirs || []);
+    } catch (e) {
+      listEl.innerHTML = '<div class="source-empty" style="color:var(--danger)">Cannot reach server.</div>';
+    }
+  }
+
+  function renderSources(dirs) {
+    const listEl = document.getElementById('sources-list');
+    let html = '';
+
+    // ── Browser-picked folders (IDB-persisted, shown with remove) ──
+    dirHandles.forEach(d => {
+      const count = sessionTracks.filter(t => t.dirName === d.name).length;
+      const status = d.needsGrant ? '🔐 needs permission click' : count + ' tracks';
+      html += `<div class="source-row session">
+        <div class="source-icon">📂</div>
+        <div class="source-info">
+          <div class="source-path">${d.name}</div>
+          <div class="source-count">${status}</div>
+        </div>
+        <button class="source-remove source-remove-idb" data-name="${d.name}" title="Forget folder">✕</button>
+      </div>`;
+    });
+
+    // ── Server-side permanent paths ───────────────────────────────
+    dirs.forEach((d, i) => {
+      html += `<div class="source-row ${d.exists ? '' : 'err'}">
+        <div class="source-icon">${d.exists ? '📁' : '⚠'}</div>
+        <div class="source-info">
+          <div class="source-path" title="${d.path}">${d.path}</div>
+          <div class="source-count">${d.exists ? d.count + ' tracks' : 'Folder not found'}</div>
+        </div>
+        <button class="source-remove source-remove-srv" data-index="${i}" title="Remove">✕</button>
+      </div>`;
+    });
+
+    if (!html) {
+      listEl.innerHTML = '<div class="source-empty">No sources yet. Use Pick/Drop or Enter path.</div>';
+      return;
+    }
+    listEl.innerHTML = html;
+
+    // Remove IDB folder
+    listEl.querySelectorAll('.source-remove-idb').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const name = btn.dataset.name;
+        // Revoke blob URLs for tracks from this folder
+        sessionTracks.filter(t => t.dirName === name).forEach(t => URL.revokeObjectURL(t.blobUrl));
+        sessionTracks = sessionTracks.filter(t => t.dirName !== name);
+        dirHandles = dirHandles.filter(d => d.name !== name);
+        await idbDeleteHandle(name);
+        mergeSessionIntoLibrary();
+        renderSavedHandlesBanner();
+        await loadSources();
+        setSourceMsg(`"${name}" removed.`, 'ok');
+      });
+    });
+
+    // Remove server path
+    listEl.querySelectorAll('.source-remove-srv').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        btn.disabled = true; btn.textContent = '…';
+        const res  = await fetch(`${SERVER}/config/remove`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ index: parseInt(btn.dataset.index) }),
+        });
+        const data = await res.json();
+        if (data.ok) { await loadSources(); await loadLibrary(true); }
+        else setSourceMsg(data.error || 'Error removing source', 'error');
+      });
+    });
+  }
+
+  function setSourceMsg(text, type) {
+    const el = document.getElementById('source-msg');
+    el.textContent = text; el.className = type || '';
+    if (text) setTimeout(() => { if (el.textContent === text) { el.textContent = ''; el.className = ''; } }, 4000);
+  }
+
+  document.getElementById('btn-add-source').addEventListener('click', addSource);
+  document.getElementById('source-path-input').addEventListener('keydown', e => { if (e.key === 'Enter') addSource(); });
+
+  async function addSource() {
+    const inp = document.getElementById('source-path-input');
+    const p   = inp.value.trim();
+    if (!p) { setSourceMsg('Enter a folder path first.', 'error'); return; }
+    const btn = document.getElementById('btn-add-source');
+    btn.disabled = true; btn.textContent = 'Adding…';
+    setSourceMsg('', '');
+    try {
+      const res  = await fetch(`${SERVER}/config/add`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path: p }),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        inp.value = '';
+        setSourceMsg(`✓ Added — ${data.count} tracks found`, 'ok');
+        // Switch to current tab to show new source
+        document.querySelector('.src-tab[data-pane="pane-current"]').click();
+        await loadLibrary(true);
+      } else {
+        setSourceMsg(data.error || 'Failed to add folder', 'error');
+      }
+    } catch (e) { setSourceMsg('Cannot reach server.', 'error'); }
+    btn.disabled = false; btn.textContent = 'Add';
+  }
+
+  document.getElementById('btn-refresh-lib').addEventListener('click', async () => {
+    const btn = document.getElementById('btn-refresh-lib');
+    btn.style.opacity = '0.4';
+    await loadLibrary(true);
+    btn.style.opacity = '';
+  });
+
   // ── Playback ──────────────────────────────────────────────────
   function playTrack(path) {
     ensureCtx();
     if (audioCtx.state === 'suspended') audioCtx.resume();
-    audioEl.src = `${SERVER}/file/${encodeURIComponent(path)}`;
-    audioEl.play();
 
-    const parts = path.split('/');
-    document.getElementById('np-title').textContent = parts[parts.length - 1].replace(/\.[^.]+$/, '');
-    document.getElementById('np-folder').textContent = parts.length > 1 ? parts.slice(0, -1).join(' / ') : '';
+    const session = sessionTracks.find(t => t.id === path);
+    if (session) {
+      // Browser-held file — play via blob URL
+      audioEl.src = session.blobUrl;
+      document.getElementById('np-title').textContent = session.name;
+      document.getElementById('np-folder').textContent = '⚡ ' + session.folder;
+    } else {
+      // Server-held file
+      audioEl.src = `${SERVER}/file/${encodeURIComponent(path)}`;
+      const disp  = displayPath(path);
+      const parts = disp.split('/');
+      document.getElementById('np-title').textContent = parts[parts.length - 1].replace(/\.[^.]+$/, '');
+      document.getElementById('np-folder').textContent = parts.length > 1 ? parts.slice(0, -1).join(' / ') : '';
+    }
+
+    audioEl.play();
     document.getElementById('btn-play').textContent = '⏸';
     rebuildEQChain();
     highlightCurrent();
@@ -1833,6 +2485,7 @@ Equalizer = (function() {
   // ── Boot ──────────────────────────────────────────────────────
   resizeCanvas();
   loadLibrary();
+  restorePersistedHandles(); // restore browser-picked folders from IDB
 })();
 </script>
 </body>
