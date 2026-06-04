@@ -291,7 +291,7 @@
     font-size: 11px; color: var(--muted); transition: border-color 0.15s;
   }
   .eq-toggle-pill.on { border-color: var(--accent); color: var(--accent2); }
-  #eq-enabled { }
+  #eq-enabled { display: none; }
   .eq-dot { width:6px; height:6px; border-radius:50%; background:var(--muted); transition: background 0.2s; }
   .eq-toggle-pill.on .eq-dot { background: var(--green); box-shadow: 0 0 5px var(--green); }
 
@@ -1694,11 +1694,13 @@ Equalizer = (function() {
   const folderPicker = document.getElementById('folder-picker');
   const dropProgress = document.getElementById('drop-progress');
   
-  // NOTE: When running directly from a file:// URL, modern Chromium disables this API
+  // Checking for secure context to ensure the API is fully available
   const hasFSAPI     = window.isSecureContext && typeof window.showDirectoryPicker === 'function';
 
   // Dynamic warning text depending on environment
   if (hasFSAPI) {
+    // CRITICAL FIX: Hide the fallback input so the persistent API can actually be clicked!
+    folderPicker.style.display = 'none'; 
     dropZone.querySelector('.drop-sub').innerHTML =
       'Folder is <strong>remembered across sessions</strong> (Chrome/Edge/Safari).<br>' +
       '<span style="color:var(--muted)">Firefox: drag-and-drop works but won\'t persist.</span>';
@@ -1747,7 +1749,7 @@ Equalizer = (function() {
     dropZone.classList.remove('dragover');
     const items = e.dataTransfer.items;
     
-    // Check if we can extract a persistent handle first via drag and drop
+    // Attempt persistent extraction via drag and drop if supported
     if (items && items.length && hasFSAPI) {
       for (const item of items) {
         if (item.getAsFileSystemHandle) {
@@ -1764,7 +1766,7 @@ Equalizer = (function() {
                dropProgress.textContent = `✓ ${n} tracks — remembered for next time`;
                setSourceMsg(`✓ ${n} tracks from "${handle.name}" saved permanently`, 'ok');
                setTimeout(() => sourcesOverlay.classList.remove('open'), 1400);
-               return; // Exit out, we successfully used the persistent API
+               return; 
             }
           } catch (err) {
             console.warn("Could not extract FS handle, falling back to temp file reader", err);
