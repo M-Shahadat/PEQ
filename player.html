@@ -4,855 +4,1243 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Squiglink Player</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jsmediatags/3.9.5/jsmediatags.min.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=DM+Sans:wght@300;400;500;600&display=swap');
 
   :root {
-    --bg:        #0f0f10;
-    --bg2:       #161618;
-    --bg3:       #1e1e21;
-    --bg4:       #252529;
-    --border:    #2a2a30;
-    --accent:    #7c6af7;
-    --accent2:   #a89ff9;
-    --text:      #e8e8ec;
-    --muted:     #7a7a85;
-    --danger:    #f76a6a;
-    --green:     #6af7a0;
-    --sidebar-w: 300px;
+    /* ── DARK THEME (Default) ── */
+    --bg:              #0f0f10;
+    --bg2:             #161618;
+    --bg3:             #1e1e21;
+    --bg4:             #252529;
+    --border:          #2a2a30;
+    --accent:          #7c6af7;
+    --accent2:         #a89ff9;
+    --text:            #e8e8ec;
+    --muted:           #7a7a85;
+    --danger:          #f76a6a;
+    --green:           #6af7a0;
+    
+    /* Dynamic Graph Variables */
+    --grid-line:       rgba(255,255,255,0.04);
+    --grid-strong:     rgba(255,255,255,0.1);
+    --curve-glow:      rgba(124,106,247,0.8);
+    --curve-fill:      rgba(124,106,247,0.25);
+    --handle-brd:      rgba(255,255,255,0.25);
+    --btn-invert-bg:   #e8e8ec;
+    --btn-invert-txt:  #0f0f10;
+    
+    --sidebar-w:       280px;
+    --player-h:        90px;
   }
 
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root[data-theme="light"] {
+    /* ── LIGHT THEME ── */
+    --bg:              #f4f4f5;
+    --bg2:             #ffffff;
+    --bg3:             #e4e4e7;
+    --bg4:             #d4d4d8;
+    --border:          #e4e4e7;
+    --accent:          #6366f1;
+    --accent2:         #4f46e5;
+    --text:            #18181b;
+    --muted:           #71717a;
+    --danger:          #ef4444;
+    --green:           #10b981;
+    
+    /* Dynamic Graph Variables */
+    --grid-line:       rgba(0,0,0,0.06);
+    --grid-strong:     rgba(0,0,0,0.15);
+    --curve-glow:      rgba(99,102,241,0.4);
+    --curve-fill:      rgba(99,102,241,0.15);
+    --handle-brd:      rgba(0,0,0,0.15);
+    --btn-invert-bg:   #18181b;
+    --btn-invert-txt:  #ffffff;
+  }
+
+  *, *::before, *::after { 
+    box-sizing: border-box; 
+    margin: 0; 
+    padding: 0; 
+  }
 
   body {
-    background: var(--bg);
-    color: var(--text);
+    background: var(--bg); 
+    color: var(--text); 
     font-family: 'DM Sans', sans-serif;
-    font-size: 13px;
-    height: 100vh;
-    overflow: hidden;
-    display: flex;
+    font-size: 13px; 
+    height: 100vh; 
+    overflow: hidden; 
+    display: flex; 
     flex-direction: column;
+    transition: background-color 0.2s, color 0.2s;
   }
 
-  /* ── TOP BAR ─────────────────────────────────── */
-  #topbar {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 10px 16px;
-    background: var(--bg2);
-    border-bottom: 1px solid var(--border);
-    flex-shrink: 0;
-    z-index: 10;
-  }
-  #topbar .logo {
-    font-family: 'DM Mono', monospace;
-    font-weight: 500;
-    font-size: 14px;
-    color: var(--accent2);
-    letter-spacing: -0.02em;
-    white-space: nowrap;
-  }
-  #topbar .logo span { color: var(--muted); font-weight: 300; }
-
-  #now-playing-bar {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    min-width: 0;
-  }
-  #np-title {
-    font-weight: 500;
-    font-size: 13px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  #np-folder {
-    font-size: 11px;
-    color: var(--muted);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    font-family: 'DM Mono', monospace;
-  }
-
-  /* transport controls */
-  #transport {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    flex-shrink: 0;
-  }
-  .t-btn {
-    background: var(--bg3);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    color: var(--text);
-    cursor: pointer;
-    padding: 5px 10px;
-    font-size: 13px;
-    transition: background 0.15s;
-    display: flex; align-items: center; justify-content: center;
-  }
-  .t-btn:hover { background: var(--bg4); }
-  .t-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
-
-  /* progress */
-  #progress-wrap {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 0 16px 8px;
-    background: var(--bg2);
-    border-bottom: 1px solid var(--border);
-    flex-shrink: 0;
-  }
-  #progress-bar-outer {
-    flex: 1;
-    height: 4px;
-    background: var(--bg4);
-    border-radius: 2px;
-    cursor: pointer;
-    position: relative;
-  }
-  #progress-bar-fill {
-    height: 100%;
-    background: var(--accent);
-    border-radius: 2px;
-    width: 0%;
-    pointer-events: none;
-    transition: width 0.1s linear;
-  }
-  #time-cur, #time-tot {
-    font-family: 'DM Mono', monospace;
-    font-size: 11px;
-    color: var(--muted);
-    white-space: nowrap;
-  }
-  #vol-wrap { display: flex; align-items: center; gap: 6px; }
-  #vol-icon { font-size: 13px; color: var(--muted); }
-  #vol-slider {
-    -webkit-appearance: none; appearance: none;
-    width: 70px; height: 3px;
-    background: var(--bg4);
-    border-radius: 2px;
-    outline: none;
-    cursor: pointer;
-  }
-  #vol-slider::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    width: 10px; height: 10px;
-    border-radius: 50%;
-    background: var(--accent2);
-    cursor: pointer;
-  }
-
-  /* ── MAIN ────────────────────────────────────── */
-  #main {
-    display: flex;
-    flex: 1;
-    overflow: hidden;
+  /* ── MAIN WORKSPACE ──────────────────────────── */
+  #workspace { 
+    display: flex; 
+    flex: 1; 
+    overflow: hidden; 
   }
 
   /* ── SIDEBAR ─────────────────────────────────── */
-  #sidebar {
-    width: var(--sidebar-w);
-    min-width: var(--sidebar-w);
-    background: var(--bg2);
-    border-right: 1px solid var(--border);
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-  }
-  #search-wrap {
-    padding: 10px;
-    border-bottom: 1px solid var(--border);
-    flex-shrink: 0;
-  }
-  #search {
-    width: 100%;
-    background: var(--bg3);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    color: var(--text);
-    padding: 6px 10px;
-    font-size: 12px;
-    font-family: 'DM Sans', sans-serif;
-    outline: none;
-    transition: border-color 0.15s;
-  }
-  #search:focus { border-color: var(--accent); }
-  #search::placeholder { color: var(--muted); }
-
-  #library {
-    flex: 1;
-    overflow-y: auto;
-    padding: 4px 0;
-  }
-  #library::-webkit-scrollbar { width: 4px; }
-  #library::-webkit-scrollbar-track { background: transparent; }
-  #library::-webkit-scrollbar-thumb { background: var(--bg4); border-radius: 2px; }
-
-  .lib-folder {
-    padding: 6px 12px 2px;
-    font-size: 10px;
-    font-family: 'DM Mono', monospace;
-    color: var(--muted);
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    border-top: 1px solid var(--border);
-    margin-top: 4px;
-  }
-  .lib-folder:first-child { border-top: none; margin-top: 0; }
-
-  .lib-track {
-    padding: 6px 14px;
-    cursor: pointer;
-    font-size: 12px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    border-radius: 4px;
-    margin: 1px 4px;
-    color: var(--text);
-    transition: background 0.1s;
-  }
-  .lib-track:hover { background: var(--bg3); }
-  .lib-track.playing {
-    background: rgba(124,106,247,0.18);
-    color: var(--accent2);
-    font-weight: 500;
+  #sidebar { 
+    width: var(--sidebar-w); 
+    min-width: var(--sidebar-w); 
+    background: var(--bg); 
+    border-right: 1px solid var(--border); 
+    display: flex; 
+    flex-direction: column; 
+    overflow: hidden; 
   }
 
-  #lib-status {
-    padding: 20px;
-    color: var(--muted);
-    font-size: 12px;
-    text-align: center;
+  .logo-wrap { 
+    padding: 16px 20px 10px; 
+    flex-shrink: 0; 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+  }
+
+  .logo { 
+    font-family: 'DM Mono', monospace; 
+    font-weight: 500; 
+    font-size: 16px; 
+    color: var(--accent2); 
+    letter-spacing: -0.02em; 
+  }
+
+  .logo span { 
+    color: var(--muted); 
+    font-weight: 300; 
+  }
+
+  #btn-theme { 
+    background: none; 
+    border: none; 
+    font-size: 16px; 
+    cursor: pointer; 
+    opacity: 0.7; 
+    transition: opacity 0.2s, transform 0.2s; 
+  }
+
+  #btn-theme:hover { 
+    opacity: 1; 
+    transform: scale(1.1); 
+  }
+
+  #sidebar-header { 
+    display: flex; 
+    align-items: center; 
+    padding: 10px 20px; 
+    gap: 6px; 
+    flex-shrink: 0; 
+  }
+
+  #sidebar-header .lib-title { 
+    font-size: 11px; 
+    font-family: 'DM Mono', monospace; 
+    color: var(--muted); 
+    text-transform: uppercase; 
+    letter-spacing: 0.08em; 
+    flex: 1; 
+  }
+
+  #btn-manage-sources { 
+    background: none; 
+    border: 1px solid var(--border); 
+    border-radius: 4px; 
+    color: var(--muted); 
+    cursor: pointer; 
+    font-size: 11px; 
+    padding: 3px 8px; 
+    font-family: 'DM Sans', sans-serif; 
+    transition: color 0.12s, border-color 0.12s; 
+  }
+
+  #btn-manage-sources:hover { 
+    color: var(--text); 
+    border-color: var(--muted); 
+  }
+
+  #search-wrap { 
+    padding: 0 20px 10px; 
+    flex-shrink: 0; 
+  }
+
+  #search { 
+    width: 100%; 
+    background: var(--bg3); 
+    border: 1px solid var(--border); 
+    border-radius: 6px; 
+    color: var(--text); 
+    padding: 7px 12px; 
+    font-size: 12px; 
+    font-family: 'DM Sans', sans-serif; 
+    outline: none; 
+    transition: border-color 0.15s, background-color 0.2s; 
+  }
+
+  #search:focus { 
+    border-color: var(--accent); 
+  }
+
+  #library { 
+    flex: 1; 
+    overflow-y: auto; 
+    padding: 4px 8px; 
+  }
+
+  #library::-webkit-scrollbar { 
+    width: 4px; 
+  } 
+  
+  #library::-webkit-scrollbar-thumb { 
+    background: var(--bg4); 
+    border-radius: 2px; 
+  }
+
+  .lib-folder { 
+    padding: 12px 12px 4px; 
+    font-size: 10px; 
+    font-family: 'DM Mono', monospace; 
+    color: var(--muted); 
+    text-transform: uppercase; 
+    letter-spacing: 0.08em; 
+  }
+
+  .lib-track { 
+    padding: 8px 12px; 
+    cursor: pointer; 
+    font-size: 13px; 
+    white-space: nowrap; 
+    overflow: hidden; 
+    text-overflow: ellipsis; 
+    border-radius: 6px; 
+    color: var(--muted); 
+    transition: color 0.1s, background 0.1s; 
+  }
+
+  .lib-track:hover { 
+    color: var(--text); 
+    background: var(--bg2); 
+  }
+
+  .lib-track.playing { 
+    color: var(--accent2); 
+    background: rgba(124,106,247,0.12); 
+    font-weight: 500; 
+  }
+
+  #lib-status { 
+    padding: 20px; 
+    color: var(--muted); 
+    font-size: 12px; 
+    text-align: center; 
   }
 
   /* ── EQ PANEL ────────────────────────────────── */
-  #eq-panel {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    background: var(--bg);
+  #eq-panel { 
+    flex: 1; 
+    display: flex; 
+    flex-direction: column; 
+    overflow: hidden; 
+    background: var(--bg2); 
   }
 
-  /* top toolbar */
-  #eq-toolbar {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 14px;
-    background: var(--bg2);
-    border-bottom: 1px solid var(--border);
+  #eq-toolbar { 
+    display: flex; 
+    align-items: center; 
+    gap: 8px; 
+    padding: 12px 20px; 
+    border-bottom: 1px solid var(--border); 
+    flex-shrink: 0; 
+    flex-wrap: wrap; 
+    background: var(--bg2); 
+  }
+
+  .section-label { 
+    font-size: 11px; 
+    font-family: 'DM Mono', monospace; 
+    color: var(--muted); 
+    text-transform: uppercase; 
+    letter-spacing: 0.1em; 
+    margin-right: 8px; 
+  }
+
+  .btn { 
+    background: var(--bg3); 
+    border: 1px solid var(--border); 
+    border-radius: 5px; 
+    color: var(--text); 
+    cursor: pointer; 
+    padding: 6px 12px; 
+    font-size: 12px; 
+    font-family: 'DM Sans', sans-serif; 
+    white-space: nowrap; 
+    transition: 0.12s; 
+  }
+
+  .btn:hover { 
+    background: var(--bg4); 
+  }
+
+  .btn.primary { 
+    background: var(--accent); 
+    border-color: var(--accent); 
+    color: #fff; 
+    font-weight: 500; 
+  } 
+
+  .btn.primary:hover { 
+    opacity: 0.85; 
+  }
+
+  .btn.danger { 
+    border-color: var(--danger); 
+    color: var(--danger); 
+  } 
+
+  .btn.danger:hover { 
+    background: rgba(247,106,106,0.1); 
+  }
+
+  .eq-toggle-pill { 
+    display: flex; 
+    align-items: center; 
+    gap: 6px; 
+    background: var(--bg3); 
+    border: 1px solid var(--border); 
+    border-radius: 5px; 
+    padding: 5px 12px; 
+    cursor: pointer; 
+    font-size: 11px; 
+    font-family: 'DM Mono', monospace; 
+    color: var(--muted); 
+  }
+
+  .eq-toggle-pill.on { 
+    border-color: var(--accent); 
+    color: var(--accent2); 
+  }
+
+  #eq-enabled { 
+    display: none; 
+  } 
+
+  .eq-dot { 
+    width: 6px; 
+    height: 6px; 
+    border-radius: 50%; 
+    background: var(--muted); 
+    transition: 0.2s; 
+  } 
+
+  .eq-toggle-pill.on .eq-dot { 
+    background: var(--green); 
+    box-shadow: 0 0 5px var(--green); 
+  }
+
+  #preamp-display { 
+    font-family: 'DM Mono', monospace; 
+    font-size: 11px; 
+    color: var(--muted); 
+    margin-left: auto; 
+  } 
+
+  #preamp-display span { 
+    color: var(--text); 
+  }
+
+  #eq-view-tabs { 
+    display: flex; 
+    gap: 4px; 
+    padding: 10px 20px 0; 
+    border-bottom: 1px solid var(--border); 
+    flex-shrink: 0; 
+  }
+
+  .view-tab { 
+    font-size: 12px; 
+    font-family: 'DM Mono', monospace; 
+    color: var(--muted); 
+    padding: 6px 16px 8px; 
+    cursor: pointer; 
+    border-bottom: 2px solid transparent; 
+    transition: color 0.15s, border-color 0.15s; 
+  }
+
+  .view-tab:hover { 
+    color: var(--text); 
+  } 
+
+  .view-tab.active { 
+    color: var(--accent2); 
+    border-bottom-color: var(--accent); 
+  }
+
+  .eq-view { 
+    display: none; 
+    flex: 1; 
+    min-height: 0; 
+    flex-direction: column; 
+  } 
+
+  .eq-view.visible { 
+    display: flex; 
+  }
+
+  #view-graph { 
+    overflow: hidden; 
+    background: var(--bg); 
+  }
+
+  #eq-canvas-wrap { 
+    flex: 1; 
+    position: relative; 
+    min-height: 0; 
+    cursor: crosshair; 
+  } 
+
+  #eq-canvas { 
+    display: block; 
+    width: 100%; 
+    height: 100%; 
+  }
+
+  #band-strip { 
+    display: flex; 
+    gap: 0; 
+    border-top: 1px solid var(--border); 
+    background: var(--bg2); 
+    overflow-x: auto; 
+    flex-shrink: 0; 
+  }
+
+  #band-strip::-webkit-scrollbar { 
+    height: 3px; 
+  } 
+
+  #band-strip::-webkit-scrollbar-thumb { 
+    background: var(--bg4); 
+  }
+
+  .band-card { 
+    min-width: 96px; 
+    border-right: 1px solid var(--border); 
+    padding: 10px 10px 8px; 
+    display: flex; 
+    flex-direction: column; 
+    gap: 5px; 
+    cursor: pointer; 
+    position: relative; 
+    transition: background 0.2s; 
+  }
+
+  .band-card:hover { 
+    background: var(--bg3); 
+  } 
+
+  .band-card.selected { 
+    background: rgba(124,106,247,0.12); 
+  } 
+
+  .band-card.disabled { 
+    opacity: 0.38; 
+  }
+
+  .band-num { 
+    font-family: 'DM Mono', monospace; 
+    font-size: 9px; 
+    color: var(--muted); 
+    letter-spacing: 0.06em; 
+  }
+
+  .band-type-sel { 
+    background: transparent; 
+    border: none; 
+    color: var(--accent2); 
+    font-family: 'DM Mono', monospace; 
+    font-size: 11px; 
+    font-weight: 500; 
+    cursor: pointer; 
+    padding: 0; 
+    outline: none; 
+    width: 100%; 
+  }
+
+  .band-type-sel option { 
+    background: var(--bg2); 
+    color: var(--text); 
+  }
+
+  .band-val { 
+    font-family: 'DM Mono', monospace; 
+    font-size: 10px; 
+    color: var(--text); 
+  }
+
+  .band-gain { 
+    font-family: 'DM Mono', monospace; 
+    font-size: 13px; 
+    font-weight: 500; 
+    color: var(--text); 
+  } 
+
+  .band-gain.pos { 
+    color: var(--green); 
+  } 
+
+  .band-gain.neg { 
+    color: var(--danger); 
+  }
+
+  .band-delete { 
+    position: absolute; 
+    top: 6px; 
+    right: 6px; 
+    font-size: 12px; 
+    color: var(--muted); 
+    cursor: pointer; 
+    opacity: 0; 
+    background: none; 
+    border: none; 
+    padding: 0; 
+  }
+
+  .band-card:hover .band-delete { 
+    opacity: 1; 
+  } 
+
+  .band-delete:hover { 
+    color: var(--danger); 
+  }
+
+  .view-panel-scroll { 
+    padding: 20px; 
+    overflow-y: auto; 
+    gap: 14px; 
+    background: var(--bg); 
+  }
+
+  .view-panel-scroll::-webkit-scrollbar { 
+    width: 4px; 
+  } 
+
+  .view-panel-scroll::-webkit-scrollbar-thumb { 
+    background: var(--bg4); 
+    border-radius: 2px; 
+  }
+
+  #peq-table { 
+    width: 100%; 
+    border-collapse: collapse; 
+    font-family: 'DM Mono', monospace; 
+    font-size: 12px; 
+  }
+
+  #peq-table th { 
+    color: var(--muted); 
+    font-weight: 400; 
+    text-align: left; 
+    padding: 6px 8px 10px; 
+    border-bottom: 1px solid var(--border); 
+    font-size: 10px; 
+    text-transform: uppercase; 
+    letter-spacing: 0.06em; 
+  }
+
+  #peq-table td { 
+    padding: 4px 6px; 
+    vertical-align: middle; 
+  } 
+
+  #peq-table tr.selected-row td { 
+    background: rgba(124,106,247,0.1); 
+  }
+
+  .tbl-input { 
+    background: transparent; 
+    border: 1px solid transparent; 
+    border-radius: 4px; 
+    color: var(--text); 
+    font-family: 'DM Mono', monospace; 
+    font-size: 12px; 
+    padding: 4px 6px; 
+    width: 100%; 
+    outline: none; 
+    text-align: right; 
+  }
+
+  .tbl-input:focus { 
+    border-color: var(--accent); 
+    background: var(--bg3); 
+  } 
+
+  .tbl-input.gain-pos { 
+    color: var(--green); 
+  } 
+
+  .tbl-input.gain-neg { 
+    color: var(--danger); 
+  }
+
+  .tbl-type { 
+    background: transparent; 
+    border: 1px solid transparent; 
+    border-radius: 4px; 
+    color: var(--accent2); 
+    font-family: 'DM Mono', monospace; 
+    font-size: 12px; 
+    padding: 4px 6px; 
+    cursor: pointer; 
+    outline: none; 
+    width: 100%; 
+  }
+
+  .tbl-del { 
+    background: none; 
+    border: none; 
+    color: var(--muted); 
+    cursor: pointer; 
+    font-size: 14px; 
+  } 
+
+  .tbl-del:hover { 
+    color: var(--danger); 
+  }
+
+  .simple-note { 
+    font-size: 12px; 
+    color: var(--muted); 
+    line-height: 1.6; 
+    padding: 12px 16px; 
+    background: var(--bg2); 
+    border-radius: 6px; 
+    border: 1px solid var(--border); 
+    margin-bottom: 16px; 
+  }
+
+  .slider-band { 
+    display: flex; 
+    align-items: center; 
+    gap: 16px; 
+    margin-bottom: 16px; 
+  } 
+
+  .slider-band-label { 
+    min-width: 90px; 
+    flex-shrink: 0; 
+  }
+
+  .slider-band-name { 
+    font-size: 13px; 
+    font-weight: 500; 
+    color: var(--text); 
+  } 
+
+  .slider-band-hz { 
+    font-family: 'DM Mono', monospace; 
+    font-size: 11px; 
+    color: var(--muted); 
+    margin-top: 2px; 
+  }
+  
+  .simple-slider { 
+    -webkit-appearance: none; 
+    appearance: none; 
+    flex: 1; 
+    height: 4px; 
+    border-radius: 2px; 
+    background: var(--bg4); 
+    outline: none; 
+    cursor: pointer; 
+  }
+
+  .simple-slider::-webkit-slider-thumb { 
+    -webkit-appearance: none; 
+    width: 16px; 
+    height: 16px; 
+    border-radius: 50%; 
+    background: var(--accent2); 
+    cursor: pointer; 
+    border: 2px solid var(--bg); 
+    transition: 0.15s; 
+    box-shadow: 0 0 5px rgba(124,106,247,0.3); 
+  }
+
+  .simple-slider::-webkit-slider-thumb:hover { 
+    background: var(--accent); 
+    transform: scale(1.1); 
+  }
+
+  .simple-slider-val { 
+    font-family: 'DM Mono', monospace; 
+    font-size: 12px; 
+    width: 56px; 
+    text-align: right; 
+    flex-shrink: 0; 
+    color: var(--muted); 
+  }
+
+  .simple-slider-val.pos { 
+    color: var(--green); 
+  } 
+
+  .simple-slider-val.neg { 
+    color: var(--danger); 
+  }
+
+  /* ── SPOTIFY-STYLE PLAYER BAR ────────────────── */
+  #player-bar { 
+    height: var(--player-h); 
+    background: var(--bg2); 
+    border-top: 1px solid var(--border); 
+    display: flex; 
+    align-items: center; 
+    padding: 0 24px; 
+    gap: 20px; 
+    flex-shrink: 0; 
+    z-index: 100; 
+  }
+
+  .pb-left { 
+    display: flex; 
+    align-items: center; 
+    gap: 14px; 
+    width: 300px; 
+    min-width: 0; 
+  }
+
+  #art-container { 
+    width: 56px; 
+    height: 56px; 
+    border-radius: 6px; 
+    background: var(--bg4); 
+    flex-shrink: 0; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    overflow: hidden; 
+    box-shadow: 0 4px 10px rgba(0,0,0,0.15); 
+  }
+
+  #now-playing-art { 
+    width: 100%; 
+    height: 100%; 
+    object-fit: cover; 
+    display: none; 
+  } 
+
+  #art-fallback { 
+    font-size: 24px; 
+    color: var(--muted); 
+  }
+  
+  .np-info { 
+    display: flex; 
+    flex-direction: column; 
+    gap: 4px; 
+    overflow: hidden; 
+  } 
+
+  #np-title { 
+    font-size: 14px; 
+    font-weight: 600; 
+    color: var(--text); 
+    white-space: nowrap; 
+    overflow: hidden; 
+    text-overflow: ellipsis; 
+  } 
+
+  #np-folder { 
+    font-size: 12px; 
+    color: var(--muted); 
+    white-space: nowrap; 
+    overflow: hidden; 
+    text-overflow: ellipsis; 
+  }
+
+  .pb-center { 
+    flex: 1; 
+    display: flex; 
+    flex-direction: column; 
+    align-items: center; 
+    gap: 8px; 
+    max-width: 720px; 
+    margin: 0 auto; 
+  }
+
+  #transport { 
+    display: flex; 
+    align-items: center; 
+    gap: 16px; 
+  }
+
+  .t-btn { 
+    background: none; 
+    border: none; 
+    color: var(--muted); 
+    font-size: 16px; 
+    cursor: pointer; 
+    transition: 0.15s; 
+    width: 32px; 
+    height: 32px; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    border-radius: 50%; 
+  }
+
+  .t-btn:hover { 
+    color: var(--text); 
+  } 
+
+  .t-btn.active { 
+    color: var(--accent); 
+  } 
+
+  #btn-play { 
+    background: var(--btn-invert-bg); 
+    color: var(--btn-invert-txt); 
+    font-size: 14px; 
+    width: 36px; 
+    height: 36px; 
+  } 
+
+  #btn-play:hover { 
+    transform: scale(1.05); 
+  }
+
+  .seek-wrap { 
+    display: flex; 
+    align-items: center; 
+    gap: 10px; 
+    width: 100%; 
+  } 
+
+  #time-cur, #time-tot { 
+    font-family: 'DM Mono', monospace; 
+    font-size: 11px; 
+    color: var(--muted); 
+    width: 40px; 
+    text-align: center; 
+  }
+  
+  #seek-slider, #vol-slider { 
+    -webkit-appearance: none; 
+    appearance: none; 
+    flex: 1; 
+    height: 4px; 
+    border-radius: 2px; 
+    background: var(--bg4); 
+    outline: none; 
+    cursor: pointer; 
+    transition: height 0.1s; 
+  }
+
+  #seek-slider:hover { 
+    height: 6px; 
+  } 
+
+  #seek-slider::-webkit-slider-thumb, #vol-slider::-webkit-slider-thumb { 
+    -webkit-appearance: none; 
+    width: 12px; 
+    height: 12px; 
+    border-radius: 50%; 
+    background: var(--btn-invert-bg); 
+    opacity: 0; 
+    transition: opacity 0.1s; 
+  }
+
+  .seek-wrap:hover #seek-slider::-webkit-slider-thumb { 
+    opacity: 1; 
+  }
+
+  .pb-right { 
+    display: flex; 
+    align-items: center; 
+    justify-content: flex-end; 
+    gap: 10px; 
+    width: 300px; 
+  } 
+
+  #vol-icon { 
+    font-size: 16px; 
+    color: var(--muted); 
+  } 
+
+  #vol-slider { 
+    width: 90px; 
+  } 
+
+  .pb-right:hover #vol-slider::-webkit-slider-thumb { 
+    opacity: 1; 
+  }
+
+  /* ── Modals & Overlays ── */
+  .overlay { 
+    display: none; 
+    position: fixed; 
+    inset: 0; 
+    background: rgba(0,0,0,0.6); 
+    backdrop-filter: blur(4px); 
+    z-index: 200; 
+    align-items: center; 
+    justify-content: center; 
+  } 
+
+  .overlay.open { 
+    display: flex; 
+  }
+
+  .modal { 
+    background: var(--bg2); 
+    border: 1px solid var(--border); 
+    border-radius: 12px; 
+    padding: 24px; 
+    width: 520px; 
+    max-width: 95vw; 
+    display: flex; 
+    flex-direction: column; 
+    gap: 16px; 
+    box-shadow: 0 10px 40px rgba(0,0,0,0.2); 
+    max-height: 85vh; 
+    overflow: hidden; 
+  }
+
+  .modal h3 { 
+    font-size: 16px; 
+    font-weight: 500; 
+  } 
+
+  .modal p { 
+    font-size: 12px; 
+    color: var(--muted); 
+    line-height: 1.6; 
+  } 
+
+  .modal-btns { 
+    display: flex; 
+    gap: 10px; 
+    justify-content: flex-end; 
+    margin-top: 4px; 
     flex-shrink: 0;
-    flex-wrap: wrap;
   }
-  .section-label {
-    font-size: 10px;
-    font-family: 'DM Mono', monospace;
-    color: var(--muted);
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-  }
-  #eq-toolbar .section-label { margin-right: 4px; }
 
-  .btn {
-    background: var(--bg3);
-    border: 1px solid var(--border);
-    border-radius: 5px;
-    color: var(--text);
-    cursor: pointer;
-    padding: 5px 11px;
-    font-size: 11px;
-    font-family: 'DM Sans', sans-serif;
-    white-space: nowrap;
-    transition: background 0.12s, border-color 0.12s;
-    line-height: 1.4;
-  }
-  .btn:hover { background: var(--bg4); }
-  .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 500; }
-  .btn.primary:hover { opacity: 0.85; }
-  .btn.danger { border-color: var(--danger); color: var(--danger); }
-  .btn.danger:hover { background: rgba(247,106,106,0.1); }
-  .btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+  #target-search { 
+    width: 100%; 
+    background: var(--bg); 
+    border: 1px solid var(--border); 
+    border-radius: 6px; 
+    color: var(--text); 
+    padding: 12px 14px; 
+    font-size: 14px; 
+    font-family: 'DM Sans', sans-serif; 
+    outline: none; 
+  } 
 
-  /* EQ toggle pill */
-  .eq-toggle-pill {
-    display: flex; align-items: center; gap: 6px;
-    background: var(--bg3); border: 1px solid var(--border);
-    border-radius: 5px; padding: 4px 10px; cursor: pointer;
-    font-size: 11px; color: var(--muted); transition: border-color 0.15s;
+  #target-search:focus { 
+    border-color: var(--accent); 
   }
-  .eq-toggle-pill.on { border-color: var(--accent); color: var(--accent2); }
-  #eq-enabled { display: none; }
-  .eq-dot { width:6px; height:6px; border-radius:50%; background:var(--muted); transition: background 0.2s; }
-  .eq-toggle-pill.on .eq-dot { background: var(--green); box-shadow: 0 0 5px var(--green); }
+  
+  #autoeq-status { 
+    font-size: 11px; 
+    font-family: 'DM Mono', monospace; 
+    color: var(--accent2); 
+  }
 
-  /* ── Curve canvas ── */
-  #eq-canvas-wrap {
-    flex: 1;
-    position: relative;
-    min-height: 0;
-    cursor: crosshair;
-  }
-  #eq-canvas { display: block; width: 100%; height: 100%; }
+  #autoeq-results { 
+    display: flex; 
+    flex-direction: column; 
+    gap: 4px; 
+    overflow-y: auto; 
+    flex: 1; 
+    min-height: 200px; 
+    padding-right: 4px; 
+  } 
 
-  /* ── Band strip ── */
-  #band-strip {
-    display: flex;
-    gap: 0;
-    border-top: 1px solid var(--border);
-    background: var(--bg2);
-    overflow-x: auto;
-    flex-shrink: 0;
-  }
-  #band-strip::-webkit-scrollbar { height: 3px; }
-  #band-strip::-webkit-scrollbar-thumb { background: var(--bg4); }
+  #autoeq-results::-webkit-scrollbar { 
+    width: 4px; 
+  } 
 
-  .band-card {
-    min-width: 88px;
-    border-right: 1px solid var(--border);
-    padding: 8px 8px 6px;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    cursor: pointer;
-    transition: background 0.1s;
-    position: relative;
+  #autoeq-results::-webkit-scrollbar-thumb { 
+    background: var(--bg4); 
+    border-radius: 2px; 
   }
-  .band-card:hover { background: var(--bg3); }
-  .band-card.selected { background: rgba(124,106,247,0.12); }
-  .band-card.disabled { opacity: 0.38; }
 
-  .band-num {
-    font-family: 'DM Mono', monospace;
-    font-size: 9px;
-    color: var(--muted);
-    letter-spacing: 0.06em;
-  }
-  .band-type-sel {
-    background: transparent;
-    border: none;
-    color: var(--accent2);
-    font-family: 'DM Mono', monospace;
-    font-size: 10px;
-    font-weight: 500;
-    cursor: pointer;
-    padding: 0;
-    outline: none;
-    width: 100%;
-  }
-  .band-type-sel option { background: var(--bg2); color: var(--text); }
+  .aeq-item { 
+    background: var(--bg3); 
+    border: 1px solid var(--border); 
+    border-radius: 6px; 
+    padding: 10px 14px; 
+    cursor: pointer; 
+    transition: 0.1s; 
+    display: flex; 
+    flex-direction: column; 
+  } 
 
-  .band-val {
-    font-family: 'DM Mono', monospace;
-    font-size: 10px;
-    color: var(--text);
-    white-space: nowrap;
-  }
-  .band-gain {
-    font-family: 'DM Mono', monospace;
-    font-size: 12px;
-    font-weight: 500;
-    color: var(--text);
-  }
-  .band-gain.pos { color: var(--green); }
-  .band-gain.neg { color: var(--danger); }
+  .aeq-item:hover { 
+    border-color: var(--accent); 
+    background: rgba(124,106,247,0.05); 
+  } 
 
-  .band-delete {
-    position: absolute;
-    top: 4px; right: 5px;
-    font-size: 11px;
-    color: var(--muted);
-    cursor: pointer;
-    opacity: 0;
-    transition: opacity 0.1s;
-    background: none; border: none; padding: 0; line-height: 1;
-  }
-  .band-card:hover .band-delete { opacity: 1; }
-  .band-delete:hover { color: var(--danger); }
+  .aeq-name { 
+    font-size: 13px; 
+    font-weight: 500; 
+    color: var(--text); 
+  } 
 
-  /* ── Import modal ── */
-  #import-overlay {
-    display: none;
-    position: fixed; inset: 0;
-    background: rgba(0,0,0,0.6);
-    z-index: 100;
-    align-items: center; justify-content: center;
+  .aeq-meta { 
+    font-size: 11px; 
+    color: var(--muted); 
+    margin-top: 4px; 
+    font-family: 'DM Mono', monospace; 
   }
-  #import-overlay.open { display: flex; }
-  #import-modal {
-    background: var(--bg2);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 20px;
-    width: 480px;
-    max-width: 95vw;
-    display: flex; flex-direction: column; gap: 12px;
+
+  #iem-input { 
+    width: 100%; 
+    background: var(--bg3); 
+    border: 1px solid var(--border); 
+    border-radius: 6px; 
+    color: var(--text); 
+    padding: 12px; 
+    font-size: 11px; 
+    font-family: 'DM Mono', monospace; 
+    resize: vertical; 
+    min-height: 140px; 
+    outline: none; 
+    line-height: 1.7; 
+  } 
+
+  #iem-input:focus { 
+    border-color: var(--accent); 
   }
-  #import-modal h3 { font-size: 13px; font-weight: 500; }
-  #import-modal p { font-size: 11px; color: var(--muted); line-height: 1.6; }
-  #iem-input {
-    width: 100%;
-    background: var(--bg3);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    color: var(--text);
-    padding: 9px 11px;
-    font-size: 11px;
-    font-family: 'DM Mono', monospace;
-    resize: vertical;
-    min-height: 120px;
-    outline: none;
-    line-height: 1.7;
-    transition: border-color 0.15s;
+
+  #q-tooltip { 
+    position: fixed; 
+    background: var(--bg3); 
+    border: 1px solid var(--border); 
+    border-radius: 5px; 
+    padding: 5px 10px; 
+    font-family: 'DM Mono', monospace; 
+    font-size: 11px; 
+    color: var(--accent2); 
+    pointer-events: none; 
+    z-index: 300; 
+    display: none; 
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15); 
   }
-  #iem-input:focus { border-color: var(--accent); }
-  .modal-btns { display: flex; gap: 8px; justify-content: flex-end; }
 
-  #msg { font-size: 11px; color: var(--muted); font-style: italic; padding: 2px 14px; }
-  #msg.error { color: var(--danger); font-style: normal; }
-  #msg.ok { color: var(--green); font-style: normal; }
+  /* Sources Pane */
+  .src-tabs { 
+    display: flex; 
+    gap: 4px; 
+    border-bottom: 1px solid var(--border); 
+  } 
 
-  /* preamp label in toolbar */
-  #preamp-display {
-    font-family: 'DM Mono', monospace;
-    font-size: 11px;
-    color: var(--muted);
-    margin-left: auto;
-    white-space: nowrap;
+  .src-tab { 
+    font-size: 12px; 
+    font-family: 'DM Mono', monospace; 
+    color: var(--muted); 
+    padding: 6px 16px 8px; 
+    cursor: pointer; 
+    border-bottom: 2px solid transparent; 
+    transition: 0.15s; 
+  } 
+
+  .src-tab:hover { 
+    color: var(--text); 
+  } 
+
+  .src-tab.active { 
+    color: var(--accent2); 
+    border-bottom-color: var(--accent); 
   }
-  #preamp-display span { color: var(--text); }
 
-  /* ── View tabs ── */
-  #eq-view-tabs {
-    display: flex;
-    gap: 2px;
-    padding: 6px 14px 0;
-    background: var(--bg2);
-    border-bottom: 1px solid var(--border);
-    flex-shrink: 0;
+  .src-pane { 
+    display: none; 
+    flex-direction: column; 
+    gap: 14px; 
+    padding-top: 8px;
+  } 
+
+  .src-pane.visible { 
+    display: flex; 
   }
-  .view-tab {
-    font-size: 11px;
-    font-family: 'DM Mono', monospace;
-    color: var(--muted);
-    padding: 4px 12px 6px;
-    cursor: pointer;
-    border-bottom: 2px solid transparent;
-    transition: color 0.15s, border-color 0.15s;
-    white-space: nowrap;
+  
+  #drop-zone { 
+    border: 2px dashed var(--border); 
+    border-radius: 8px; 
+    padding: 40px 20px; 
+    text-align: center; 
+    cursor: pointer; 
+    transition: 0.15s; 
+    position: relative; 
+    background: var(--bg3); 
+  } 
+
+  #drop-zone:hover { 
+    border-color: var(--accent); 
+    background: rgba(124,106,247,0.05); 
+  } 
+
+  #drop-zone input[type=file] { 
+    position: absolute; 
+    inset: 0; 
+    opacity: 0; 
+    cursor: pointer; 
+    width: 100%; 
+    height: 100%; 
+  } 
+
+  .drop-icon { 
+    font-size: 32px; 
+    margin-bottom: 12px; 
+  } 
+
+  .drop-title { 
+    font-size: 14px; 
+    font-weight: 500; 
+    color: var(--text); 
+    margin-bottom: 6px; 
+  } 
+
+  .drop-sub { 
+    font-size: 12px; 
+    color: var(--muted); 
+    line-height: 1.6; 
+  } 
+
+  #drop-progress { 
+    font-size: 11px; 
+    font-family: 'DM Mono', monospace; 
+    color: var(--accent2); 
+    text-align: center; 
+    min-height: 16px;
   }
-  .view-tab:hover { color: var(--text); }
-  .view-tab.active { color: var(--accent2); border-bottom-color: var(--accent); }
-
-  /* ── Views ── */
-  .eq-view { display: none; flex: 1; min-height: 0; flex-direction: column; }
-  .eq-view.visible { display: flex; }
-
-  /* ── Graph view: canvas + band strip ── */
-  #view-graph { overflow: hidden; }
-
-  /* ── Table view ── */
-  #view-table {
+  
+  #sources-list { 
+    display: flex; 
+    flex-direction: column; 
+    gap: 8px; 
+    max-height: 300px; 
     overflow-y: auto;
-    padding: 10px 14px;
-    gap: 10px;
-  }
-  #view-table::-webkit-scrollbar { width: 4px; }
-  #view-table::-webkit-scrollbar-thumb { background: var(--bg4); border-radius:2px; }
+  } 
 
-  #peq-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-family: 'DM Mono', monospace;
-    font-size: 11px;
-  }
-  #peq-table th {
-    color: var(--muted);
-    font-weight: 400;
-    text-align: left;
-    padding: 4px 6px 8px;
-    border-bottom: 1px solid var(--border);
-    font-size: 10px;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-  }
-  #peq-table td { padding: 3px 4px; vertical-align: middle; }
-  #peq-table tr:hover td { background: rgba(255,255,255,0.02); }
-  #peq-table tr.selected-row td { background: rgba(124,106,247,0.1); }
+  .source-row { 
+    display: flex; 
+    align-items: center; 
+    gap: 12px; 
+    background: var(--bg3); 
+    border: 1px solid var(--border); 
+    border-radius: 6px; 
+    padding: 10px 14px; 
+  } 
 
-  .tbl-input {
-    background: transparent;
-    border: 1px solid transparent;
-    border-radius: 4px;
-    color: var(--text);
-    font-family: 'DM Mono', monospace;
-    font-size: 11px;
-    padding: 3px 5px;
-    width: 100%;
-    outline: none;
-    transition: border-color 0.12s, background 0.12s;
-    text-align: right;
-  }
-  .tbl-input:hover { border-color: var(--border); background: var(--bg3); }
-  .tbl-input:focus { border-color: var(--accent); background: var(--bg3); }
-  .tbl-input.gain-pos { color: var(--green); }
-  .tbl-input.gain-neg { color: var(--danger); }
+  .source-icon { 
+    font-size: 16px; 
+    flex-shrink: 0; 
+  } 
 
-  .tbl-type {
-    background: transparent;
-    border: 1px solid transparent;
-    border-radius: 4px;
-    color: var(--accent2);
-    font-family: 'DM Mono', monospace;
-    font-size: 11px;
-    padding: 3px 4px;
-    cursor: pointer;
-    outline: none;
-    width: 100%;
-    transition: border-color 0.12s, background 0.12s;
-  }
-  .tbl-type:hover { border-color: var(--border); background: var(--bg3); }
-  .tbl-type option { background: var(--bg2); }
+  .source-info { 
+    flex: 1; 
+    min-width: 0; 
+  } 
 
-  .tbl-del {
-    background: none; border: none;
-    color: var(--muted); cursor: pointer;
-    font-size: 12px; padding: 2px 6px;
-    border-radius: 3px;
-    transition: color 0.1s, background 0.1s;
-  }
-  .tbl-del:hover { color: var(--danger); background: rgba(247,106,106,0.1); }
+  .source-path { 
+    font-family: 'DM Mono', monospace; 
+    font-size: 12px; 
+    color: var(--text); 
+    white-space: nowrap; 
+    overflow: hidden; 
+    text-overflow: ellipsis; 
+  } 
 
-  .tbl-enabled {
-    width: 14px; height: 14px;
-    accent-color: var(--accent);
-    cursor: pointer;
-  }
+  .source-count { 
+    font-size: 11px; 
+    color: var(--muted); 
+    margin-top: 4px; 
+  } 
 
-  .tbl-add-row {
-    margin-top: 8px;
-  }
+  .source-remove { 
+    background: none; 
+    border: none; 
+    color: var(--muted); 
+    cursor: pointer; 
+    font-size: 16px; 
+    padding: 4px; 
+    transition: 0.1s; 
+  } 
 
-  /* ── Q tooltip ── */
-  #q-tooltip {
-    position: fixed;
-    background: var(--bg3);
-    border: 1px solid var(--border);
-    border-radius: 5px;
-    padding: 4px 9px;
-    font-family: 'DM Mono', monospace;
-    font-size: 11px;
-    color: var(--accent2);
-    pointer-events: none;
-    z-index: 200;
-    display: none;
-    white-space: nowrap;
+  .source-remove:hover { 
+    color: var(--danger); 
   }
+  
+  #msg { 
+    font-size: 11px; 
+    color: var(--muted); 
+    font-style: italic; 
+    padding: 2px 20px; 
+  } 
 
-  /* ── Simple/Slider EQ ── */
-  #view-simple {
-    overflow-y: auto;
-    padding: 16px 20px;
-    gap: 14px;
-  }
-  #view-simple::-webkit-scrollbar { width: 4px; }
-  #view-simple::-webkit-scrollbar-thumb { background: var(--bg4); border-radius:2px; }
+  #msg.ok { 
+    color: var(--green); 
+    font-style: normal; 
+  } 
 
-  .simple-note {
-    font-size: 11px;
-    color: var(--muted);
-    line-height: 1.6;
-    padding: 8px 12px;
-    background: var(--bg2);
-    border-radius: 6px;
-    border: 1px solid var(--border);
+  #msg.error { 
+    color: var(--danger); 
+    font-style: normal; 
   }
-
-  .slider-band {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-  }
-  .slider-band-label {
-    min-width: 80px;
-    flex-shrink: 0;
-  }
-  .slider-band-name {
-    font-size: 12px;
-    font-weight: 500;
-    color: var(--text);
-  }
-  .slider-band-hz {
-    font-family: 'DM Mono', monospace;
-    font-size: 10px;
-    color: var(--muted);
-    margin-top: 1px;
-  }
-  .simple-slider {
-    -webkit-appearance: none; appearance: none;
-    flex: 1;
-    height: 4px;
-    border-radius: 2px;
-    background: var(--bg4);
-    outline: none;
-    cursor: pointer;
-  }
-  .simple-slider::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    width: 14px; height: 14px;
-    border-radius: 50%;
-    background: var(--accent2);
-    cursor: pointer;
-    border: 2px solid var(--bg);
-    transition: background 0.15s;
-  }
-  .simple-slider::-webkit-slider-thumb:hover { background: var(--accent); }
-  .simple-slider-val {
-    font-family: 'DM Mono', monospace;
-    font-size: 11px;
-    width: 52px;
-    text-align: right;
-    flex-shrink: 0;
-    color: var(--muted);
-    transition: color 0.15s;
-  }
-  .simple-slider-val.pos { color: var(--green); }
-  .simple-slider-val.neg { color: var(--danger); }
-
-  .simple-reset {
-    align-self: flex-start;
-    margin-top: 4px;
-  }
-
-  /* ── Sources panel ── */
-  #sidebar-header {
-    display: flex;
-    align-items: center;
-    padding: 7px 10px 7px 12px;
-    border-bottom: 1px solid var(--border);
-    gap: 6px;
-    flex-shrink: 0;
-  }
-  #sidebar-header .lib-title {
-    font-size: 11px;
-    font-family: 'DM Mono', monospace;
-    color: var(--muted);
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    flex: 1;
-  }
-  #btn-manage-sources {
-    background: none;
-    border: 1px solid var(--border);
-    border-radius: 4px;
-    color: var(--muted);
-    cursor: pointer;
-    font-size: 11px;
-    padding: 3px 8px;
-    font-family: 'DM Sans', sans-serif;
-    transition: color 0.12s, border-color 0.12s;
-  }
-  #btn-manage-sources:hover { color: var(--text); border-color: var(--muted); }
-
-  /* ── Sources overlay ── */
-  #sources-overlay {
-    display: none;
-    position: fixed; inset: 0;
-    background: rgba(0,0,0,0.65);
-    z-index: 200;
-    align-items: center;
-    justify-content: center;
-  }
-  #sources-overlay.open { display: flex; }
-  #sources-modal {
-    background: var(--bg2);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 24px;
-    width: 560px;
-    max-width: 96vw;
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-  }
-  #sources-modal h3 { font-size: 14px; font-weight: 500; }
-
-  /* mode tabs inside modal */
-  .src-tabs { display: flex; gap: 2px; border-bottom: 1px solid var(--border); padding-bottom: 0; }
-  .src-tab {
-    font-size: 11px; font-family: 'DM Mono', monospace;
-    color: var(--muted); padding: 5px 14px 7px;
-    cursor: pointer; border-bottom: 2px solid transparent;
-    transition: color 0.12s, border-color 0.12s;
-  }
-  .src-tab:hover { color: var(--text); }
-  .src-tab.active { color: var(--accent2); border-bottom-color: var(--accent); }
-  .src-pane { display: none; flex-direction: column; gap: 12px; }
-  .src-pane.visible { display: flex; }
-
-  /* existing sources list */
-  #sources-list { display: flex; flex-direction: column; gap: 6px; }
-  .source-row {
-    display: flex; align-items: center; gap: 10px;
-    background: var(--bg3); border: 1px solid var(--border);
-    border-radius: 7px; padding: 9px 12px;
-  }
-  .source-row.err { border-color: rgba(247,106,106,0.4); }
-  .source-row.session { border-color: rgba(124,106,247,0.3); }
-  .source-icon { font-size: 14px; flex-shrink: 0; }
-  .source-info { flex: 1; min-width: 0; }
-  .source-path {
-    font-family: 'DM Mono', monospace; font-size: 11px; color: var(--text);
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  }
-  .source-count { font-size: 10px; color: var(--muted); margin-top: 2px; }
-  .source-remove {
-    background: none; border: none; color: var(--muted);
-    cursor: pointer; font-size: 13px; padding: 2px 6px;
-    border-radius: 3px; transition: color 0.1s, background 0.1s; flex-shrink: 0;
-  }
-  .source-remove:hover { color: var(--danger); background: rgba(247,106,106,0.1); }
-  .source-empty { text-align: center; color: var(--muted); font-size: 12px; padding: 16px 0; font-style: italic; }
-
-  /* drag-drop pane */
-  #drop-zone {
-    border: 2px dashed var(--border);
-    border-radius: 10px;
-    padding: 32px 20px;
-    text-align: center;
-    cursor: pointer;
-    transition: border-color 0.15s, background 0.15s;
-    position: relative;
-  }
-  #drop-zone:hover, #drop-zone.dragover {
-    border-color: var(--accent);
-    background: rgba(124,106,247,0.05);
-  }
-  #drop-zone input[type=file] {
-    position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
-  }
-  .drop-icon { font-size: 32px; margin-bottom: 10px; }
-  .drop-title { font-size: 13px; font-weight: 500; color: var(--text); margin-bottom: 4px; }
-  .drop-sub { font-size: 11px; color: var(--muted); line-height: 1.6; }
-  .drop-sub strong { color: var(--accent2); }
-  #drop-progress {
-    font-size: 11px; font-family: 'DM Mono', monospace; color: var(--accent2);
-    min-height: 16px; text-align: center;
-  }
-
-  #source-msg { font-size: 11px; min-height: 16px; font-family: 'DM Mono', monospace; }
-  #source-msg.ok    { color: var(--green); }
-  #source-msg.error { color: var(--danger); }
 </style>
 </head>
 <body>
 
-<div id="topbar">
-  <div class="logo">squig<span>link</span> player</div>
-  <div id="now-playing-bar">
-    <div id="np-title">No track selected</div>
-    <div id="np-folder"></div>
-  </div>
-  <div id="transport">
-    <button class="t-btn" id="btn-prev" title="Previous">⏮</button>
-    <button class="t-btn" id="btn-play" title="Play/Pause">▶</button>
-    <button class="t-btn" id="btn-next" title="Next">⏭</button>
-    <button class="t-btn" id="btn-shuffle" title="Shuffle">⇄</button>
-    <button class="t-btn" id="btn-repeat" title="Repeat">↻</button>
-  </div>
-</div>
-
-<div id="progress-wrap">
-  <span id="time-cur">0:00</span>
-  <div id="progress-bar-outer">
-    <div id="progress-bar-fill"></div>
-  </div>
-  <span id="time-tot">0:00</span>
-  <div id="vol-wrap">
-    <span id="vol-icon">🔊</span>
-    <input type="range" id="vol-slider" min="0" max="1.5" step="0.01" value="1">
-  </div>
-</div>
-
-<div id="main">
-
+<div id="workspace">
   <div id="sidebar">
+    <div class="logo-wrap">
+      <div class="logo">squig<span>link</span> player</div>
+      <button id="btn-theme" title="Toggle Theme">🌙</button>
+    </div>
+    
     <div id="sidebar-header">
-      <span class="lib-title">Library</span>
+      <span class="lib-title">Local Library</span>
       <button id="btn-manage-sources">+ Sources</button>
     </div>
+    
     <div id="search-wrap">
       <input id="search" type="text" placeholder="Search library…">
     </div>
+    
     <div id="library">
       <div id="lib-status">Loading library…</div>
     </div>
   </div>
 
-  <div id="sources-overlay">
-    <div id="sources-modal">
-      <h3>🎵 Music Sources</h3>
-
-      <div class="src-tabs">
-        <div class="src-tab active" data-pane="pane-pick">📂 Pick / Drop</div>
-        <div class="src-tab" data-pane="pane-current">📋 Current sources</div>
-      </div>
-
-      <div class="src-pane visible" id="pane-pick">
-        <div id="drop-zone">
-          <input type="file" id="folder-picker" webkitdirectory multiple accept="audio/*">
-          <div class="drop-icon">🎵</div>
-          <div class="drop-title">Drop a folder here, or click to browse</div>
-          <div class="drop-sub">
-            </div>
-        </div>
-        <div id="drop-progress"></div>
-      </div>
-
-      <div class="src-pane" id="pane-current">
-        <div id="sources-list">
-          <div class="source-empty">Loading…</div>
-        </div>
-      </div>
-
-      <div id="source-msg"></div>
-      <div style="display:flex;justify-content:flex-end">
-        <button class="btn" id="btn-sources-close">Done</button>
-      </div>
-    </div>
-  </div>
-
   <div id="eq-panel">
-
     <div id="eq-toolbar">
-      <span class="section-label">EQ</span>
-
+      <span class="section-label">Parametric EQ</span>
       <label class="eq-toggle-pill on" id="eq-pill" title="Toggle EQ bypass">
         <input type="checkbox" id="eq-enabled" checked>
         <div class="eq-dot"></div>
         <span id="eq-pill-label">ON</span>
       </label>
-
-      <button class="btn" id="btn-add-band">+ Band</button>
+      
+      <button class="btn primary" id="btn-target-match">🎯 Target Matcher</button>
       <button class="btn" id="btn-import">Import…</button>
+      <button class="btn" id="btn-add-band">+ Band</button>
       <button class="btn danger" id="btn-clear-eq">Clear</button>
-
+      
       <div id="preamp-display">Preamp: <span id="preamp-val">0.0 dB</span></div>
     </div>
-
+    
     <div id="eq-view-tabs">
       <div class="view-tab active" data-view="graph">Graph</div>
       <div class="view-tab" data-view="table">Table</div>
       <div class="view-tab" data-view="simple">Simple</div>
+      <div class="view-tab" data-view="tube">Tube Amp</div>
     </div>
 
     <div class="eq-view visible" id="view-graph">
@@ -862,7 +1250,7 @@
       <div id="band-strip"></div>
     </div>
 
-    <div class="eq-view" id="view-table">
+    <div class="eq-view view-panel-scroll" id="view-table">
       <table id="peq-table">
         <thead>
           <tr>
@@ -881,1381 +1269,1852 @@
       </div>
     </div>
 
-    <div class="eq-view" id="view-simple">
-      <p class="simple-note">Drag sliders to shape your sound. Changes apply in real time. These map to precise parametric filters under the hood.</p>
-
-      <div class="slider-band">
-        <div class="slider-band-label">
-          <div class="slider-band-name">Sub Bass</div>
-          <div class="slider-band-hz">40–60 Hz</div>
-        </div>
-        <input class="simple-slider" type="range" id="ss-subbass" min="-12" max="12" step="0.5" value="0">
-        <div class="simple-slider-val" id="sv-subbass">0.0 dB</div>
-      </div>
-
-      <div class="slider-band">
-        <div class="slider-band-label">
-          <div class="slider-band-name">Bass</div>
-          <div class="slider-band-hz">100–150 Hz</div>
-        </div>
-        <input class="simple-slider" type="range" id="ss-bass" min="-12" max="12" step="0.5" value="0">
-        <div class="simple-slider-val" id="sv-bass">0.0 dB</div>
-      </div>
-
-      <div class="slider-band">
-        <div class="slider-band-label">
-          <div class="slider-band-name">Warmth</div>
-          <div class="slider-band-hz">200–300 Hz</div>
-        </div>
-        <input class="simple-slider" type="range" id="ss-warmth" min="-12" max="12" step="0.5" value="0">
-        <div class="simple-slider-val" id="sv-warmth">0.0 dB</div>
-      </div>
-
-      <div class="slider-band">
-        <div class="slider-band-label">
-          <div class="slider-band-name">Mids</div>
-          <div class="slider-band-hz">800–1k Hz</div>
-        </div>
-        <input class="simple-slider" type="range" id="ss-mids" min="-12" max="12" step="0.5" value="0">
-        <div class="simple-slider-val" id="sv-mids">0.0 dB</div>
-      </div>
-
-      <div class="slider-band">
-        <div class="slider-band-label">
-          <div class="slider-band-name">Presence</div>
-          <div class="slider-band-hz">3–5 kHz</div>
-        </div>
-        <input class="simple-slider" type="range" id="ss-presence" min="-12" max="12" step="0.5" value="0">
-        <div class="simple-slider-val" id="sv-presence">0.0 dB</div>
-      </div>
-
-      <div class="slider-band">
-        <div class="slider-band-label">
-          <div class="slider-band-name">Treble</div>
-          <div class="slider-band-hz">8–10 kHz</div>
-        </div>
-        <input class="simple-slider" type="range" id="ss-treble" min="-12" max="12" step="0.5" value="0">
-        <div class="simple-slider-val" id="sv-treble">0.0 dB</div>
-      </div>
-
-      <div class="slider-band">
-        <div class="slider-band-label">
-          <div class="slider-band-name">Air</div>
-          <div class="slider-band-hz">14–16 kHz</div>
-        </div>
-        <input class="simple-slider" type="range" id="ss-air" min="-12" max="12" step="0.5" value="0">
-        <div class="simple-slider-val" id="sv-air">0.0 dB</div>
-      </div>
-
+    <div class="eq-view view-panel-scroll" id="view-simple">
+      <p class="simple-note">Drag sliders to shape your sound. Changes apply in real time.</p>
+      <div id="simple-sliders-container"></div>
       <button class="btn simple-reset" id="btn-simple-reset">Reset all</button>
     </div>
 
+    <div class="eq-view view-panel-scroll" id="view-tube">
+      <p class="simple-note">Simulate the warm, even-order harmonic distortion of a vacuum tube preamp using a WebAudio WaveShaper. Perfect for warming up sterile digital tracks.</p>
+      <div class="slider-band">
+        <div class="slider-band-label">
+          <div class="slider-band-name">Tube Drive</div>
+          <div class="slider-band-hz">Harmonic Saturation</div>
+        </div>
+        <input class="simple-slider" type="range" id="ss-tube" min="0" max="100" step="1" value="0">
+        <div class="simple-slider-val" id="sv-tube">0%</div>
+      </div>
+    </div>
+    
     <div id="msg"></div>
   </div>
+</div>
 
-  <div id="q-tooltip"></div>
+<div id="player-bar">
+  <div class="pb-left">
+    <div id="art-container">
+      <img id="now-playing-art" src="" alt="">
+      <div id="art-fallback">🎵</div>
+    </div>
+    <div class="np-info">
+      <div id="np-title">No track selected</div>
+      <div id="np-folder">Add a source to begin</div>
+    </div>
+  </div>
+  
+  <div class="pb-center">
+    <div id="transport">
+      <button class="t-btn" id="btn-shuffle" title="Shuffle">⇄</button>
+      <button class="t-btn" id="btn-prev" title="Previous">⏮</button>
+      <button class="t-btn" id="btn-play" title="Play/Pause">▶</button>
+      <button class="t-btn" id="btn-next" title="Next">⏭</button>
+      <button class="t-btn" id="btn-repeat" title="Repeat">↻</button>
+    </div>
+    <div class="seek-wrap">
+      <span id="time-cur">0:00</span>
+      <input type="range" id="seek-slider" min="0" max="1000" value="0">
+      <span id="time-tot">0:00</span>
+    </div>
+  </div>
+  
+  <div class="pb-right">
+    <span id="vol-icon">🔊</span>
+    <input type="range" id="vol-slider" min="0" max="1.5" step="0.01" value="1">
+  </div>
+</div>
 
-  <div id="import-overlay">
-    <div id="import-modal">
-      <h3>Import Parametric EQ</h3>
-      <p>Paste filter text from <a href="https://squig.link" target="_blank" style="color:var(--accent2)">squig.link</a>, <a href="https://autoeq.app" target="_blank" style="color:var(--accent2)">autoeq.app</a>, or any tool that exports APO/REW format:</p>
-      <textarea id="iem-input" placeholder="Preamp: -6.8 dB&#10;Filter 1: ON PK Fc 85 Hz Gain 6.9 dB Q 3.000&#10;Filter 2: ON PK Fc 200 Hz Gain -2.0 dB Q 1.500&#10;…"></textarea>
-      <div class="modal-btns">
-        <button class="btn" id="btn-import-cancel">Cancel</button>
-        <button class="btn primary" id="btn-import-apply">Apply</button>
+<div id="q-tooltip"></div>
+
+<div id="target-overlay" class="overlay">
+  <div id="target-modal" class="modal">
+    <h3>🎯 AutoEQ Target Matcher</h3>
+    <p>Search over 6,000 measurements dynamically fetched from the AutoEQ repository. Instantly calculate parametric filters to match your headphones to a renowned target curve.</p>
+    <input type="text" id="target-search" placeholder="Search (e.g., 'HD600', 'Moondrop')..." autocomplete="off">
+    <div id="autoeq-status">Checking AutoEQ Database cache...</div>
+    <div id="autoeq-results"></div>
+    <div class="modal-btns">
+      <button class="btn" id="btn-target-cancel">Close</button>
+    </div>
+  </div>
+</div>
+
+<div id="import-overlay" class="overlay">
+  <div id="import-modal" class="modal">
+    <h3>Import Parametric EQ</h3>
+    <textarea id="iem-input" placeholder="Preamp: -6.8 dB&#10;Filter 1: ON PK Fc 85 Hz Gain 6.9 dB Q 3.000..."></textarea>
+    <div class="modal-btns">
+      <button class="btn" id="btn-import-cancel">Cancel</button>
+      <button class="btn primary" id="btn-import-apply">Apply</button>
+    </div>
+  </div>
+</div>
+
+<div id="sources-overlay" class="overlay">
+  <div id="sources-modal" class="modal">
+    <h3>🎵 Music Sources</h3>
+    <div class="src-tabs">
+      <div class="src-tab active" data-pane="pane-pick">📂 Pick / Drop</div>
+      <div class="src-tab" data-pane="pane-current">📋 Current sources</div>
+    </div>
+    
+    <div class="src-pane visible" id="pane-pick">
+      <div id="drop-zone">
+        <input type="file" id="folder-picker" webkitdirectory multiple accept="audio/*">
+        <div class="drop-icon">🎵</div>
+        <div class="drop-title">Drop a folder here, or click to browse</div>
+        <div class="drop-sub"></div>
       </div>
+      <div id="drop-progress"></div>
+    </div>
+    
+    <div class="src-pane" id="pane-current">
+      <div id="sources-list">
+        <div class="source-empty">Loading…</div>
+      </div>
+    </div>
+    
+    <div class="modal-btns">
+      <button class="btn" id="btn-sources-close">Done</button>
     </div>
   </div>
 </div>
 
 <script>
-/*
- Biquad algorithms taken from:
- https://github.com/jaakkopasanen/AutoEq/blob/master/biquad.py
- https://github.com/mohayonao/biquad-coeffs/tree/master/packages/biquad-coeffs-cookbook
-*/
-Equalizer = (function() {
-    let config = {
-        DefaultSampleRate: 48000,
-        TrebleStartFrom: 7000,
-        AutoEQRange: [20, 15000],
-        OptimizeQRange: [0.5, 2],
-        OptimizeGainRange: [-12, 12],
-        OptimizeDeltas: [
-            [10, 10, 10, 5, 0.1, 0.5],
-            [10, 10, 10, 2, 0.1, 0.2],
-            [10, 10, 10, 1, 0.1, 0.1],
-        ],
-        GraphicEQRawFrequences: (
-            new Array(Math.ceil(Math.log(20000 / 20) / Math.log(1.0072))).fill(null)
-            .map((_, i) => 20 * Math.pow(1.0072, i))),
-        GraphicEQFrequences: Array.from(new Set(
-            new Array(Math.ceil(Math.log(20000 / 20) / Math.log(1.0563))).fill(null)
-            .map((_, i) => Math.floor(20 * Math.pow(1.0563, i))))).sort((a, b) => a - b)
+/* ── THEME TOGGLE LOGIC ──────────────────────────────────────── */
+(function initTheme() {
+  const btnTheme = document.getElementById('btn-theme');
+  let isLight = localStorage.getItem('squig-theme') === 'light' || 
+                (!localStorage.getItem('squig-theme') && window.matchMedia('(prefers-color-scheme: light)').matches);
+  
+  window.themeColors = {};
+  
+  function applyTheme() {
+    document.documentElement.setAttribute('data-theme', isLight ? 'light' : 'dark'); 
+    btnTheme.textContent = isLight ? '☀️' : '🌙';
+    
+    const s = getComputedStyle(document.documentElement);
+    window.themeColors = { 
+      grid: s.getPropertyValue('--grid-line').trim(), 
+      strong: s.getPropertyValue('--grid-strong').trim(), 
+      glow: s.getPropertyValue('--curve-glow').trim(), 
+      fill: s.getPropertyValue('--curve-fill').trim(), 
+      border: s.getPropertyValue('--handle-brd').trim(), 
+      muted: s.getPropertyValue('--muted').trim() 
     };
-    let interp = function (fv, fr) {
-        let i = 0;
-        return fv.map(f => {
-            for (; i < fr.length-1; ++i) {
-                let [f0, v0] = fr[i]; let [f1, v1] = fr[i+1];
-                if (i == 0 && f < f0) return [f, v0];
-                else if (f >= f0 && f < f1) { let v = v0 + (v1 - v0) * (f - f0) / (f1 - f0); return [f, v]; }
-            }
-            return [f, fr[fr.length-1][1]];
-        });
-    };
-    let lowshelf = function (freq, q, gain, sampleRate) {
-        freq = freq / (sampleRate || config.DefaultSampleRate);
-        freq = Math.max(1e-6, Math.min(freq, 1)); q = Math.max(1e-4, Math.min(q, 1000)); gain = Math.max(-40, Math.min(gain, 40));
-        let w0 = 2 * Math.PI * freq, sin = Math.sin(w0), cos = Math.cos(w0), a = Math.pow(10, (gain / 40)), alpha = sin / (2 * q), alphamod = (2 * Math.sqrt(a) * alpha) || 0;
-        let a0 = ((a+1) + (a-1) * cos + alphamod), a1 = -2 * ((a-1) + (a+1) * cos), a2 = ((a+1) + (a-1) * cos - alphamod);
-        let b0 = a * ((a+1) - (a-1) * cos + alphamod), b1 = 2 * a * ((a-1) - (a+1) * cos), b2 = a * ((a+1) - (a-1) * cos - alphamod);
-        return [ 1.0, a1/a0, a2/a0, b0/a0, b1/a0, b2/a0 ];
-    };
-    let highshelf = function (freq, q, gain, sampleRate) {
-        freq = freq / (sampleRate || config.DefaultSampleRate);
-        freq = Math.max(1e-6, Math.min(freq, 1)); q = Math.max(1e-4, Math.min(q, 1000)); gain = Math.max(-40, Math.min(gain, 40));
-        let w0 = 2 * Math.PI * freq, sin = Math.sin(w0), cos = Math.cos(w0), a = Math.pow(10, (gain / 40)), alpha = sin / (2 * q), alphamod = (2 * Math.sqrt(a) * alpha) || 0;
-        let a0 = ((a+1) - (a-1) * cos + alphamod), a1 = 2 * ((a-1) - (a+1) * cos), a2 = ((a+1) - (a-1) * cos - alphamod);
-        let b0 = a * ((a+1) + (a-1) * cos + alphamod), b1 = -2 * a * ((a-1) + (a+1) * cos), b2 = a * ((a+1) + (a-1) * cos - alphamod);
-        return [ 1.0, a1/a0, a2/a0, b0/a0, b1/a0, b2/a0 ];
-    };
-    let peaking = function (freq, q, gain, sampleRate) {
-        freq = freq / (sampleRate || config.DefaultSampleRate);
-        freq = Math.max(1e-6, Math.min(freq, 1)); q = Math.max(1e-4, Math.min(q, 1000)); gain = Math.max(-40, Math.min(gain, 40));
-        let w0 = 2 * Math.PI * freq, sin = Math.sin(w0), cos = Math.cos(w0), a = Math.pow(10, (gain / 40)), alpha = sin / (2 * q);
-        let a0 = 1 + alpha / a, a1 = -2 * cos, a2 = 1 - alpha / a, b0 = 1 + alpha * a, b1 = -2 * cos, b2 = 1 - alpha * a;
-        return [ 1.0, a1/a0, a2/a0, b0/a0, b1/a0, b2/a0 ];
-    };
-    let calc_gains = function (freqs, coeffs, sampleRate) {
-        sampleRate = sampleRate || config.DefaultSampleRate;
-        let gains = new Array(freqs.length).fill(0);
-        for (let i = 0; i < coeffs.length; ++i) {
-            let [a0, a1, a2, b0, b1, b2] = coeffs[i];
-            for (let j = 0; j < freqs.length; ++j) {
-                let w = 2 * Math.PI * freqs[j] / sampleRate;
-                let phi = 4 * Math.pow(Math.sin(w / 2), 2);
-                let c = (10 * Math.log10(Math.pow(b0 + b1 + b2, 2) + (b0 * b2 * phi - (b1 * (b0 + b2) + 4 * b0 * b2)) * phi) -
-                         10 * Math.log10(Math.pow(a0 + a1 + a2, 2) + (a0 * a2 * phi - (a1 * (a0 + a2) + 4 * a0 * a2)) * phi));
-                gains[j] += c;
-            }
-        }
-        return gains;
-    };
-    let calc_preamp = function (fr1, fr2) {
-        let maxGain = -Infinity;
-        for (let i = 0; i < fr1.length; ++i) maxGain = Math.max(maxGain, fr2[i][1] - fr1[i][1]);
-        return -maxGain;
-    };
-    let filters_to_coeffs = function (filters, sampleRate) {
-        return filters.map(f => {
-            if (!f.freq || f.gain == null || !f.q) return null;
-            if (f.type === "LSQ") return lowshelf(f.freq, f.q, f.gain, sampleRate);
-            if (f.type === "HSQ") return highshelf(f.freq, f.q, f.gain, sampleRate);
-            if (f.type === "PK")  return peaking(f.freq, f.q, f.gain, sampleRate);
-            return null;
-        }).filter(f => f);
-    };
-    let apply = function (fr, filters, sampleRate) {
-        let freqs = fr.map(p => p[0]);
-        let coeffs = filters_to_coeffs(filters, sampleRate);
-        let gains = calc_gains(freqs, coeffs, sampleRate);
-        return fr.map((p, i) => [p[0], p[1] + gains[i]]);
-    };
-    return { config, interp, lowshelf, highshelf, peaking, calc_gains, calc_preamp, apply, filters_to_coeffs };
+    
+    if (window.redrawGraph) {
+      window.redrawGraph();
+    }
+  }
+  
+  btnTheme.addEventListener('click', () => { 
+    isLight = !isLight; 
+    localStorage.setItem('squig-theme', isLight ? 'light' : 'dark'); 
+    applyTheme(); 
+  });
+  
+  applyTheme();
 })();
-</script>
 
-<script>
+/* ── EQUALIZER MATH ENGINE (For Visual Graph ONLY) ───────────── */
+Equalizer = (function() {
+  let calc_gains = function (freqs, coeffs, sampleRate) {
+    sampleRate = sampleRate || 48000; 
+    let gains = new Array(freqs.length).fill(0);
+    for (let i = 0; i < coeffs.length; ++i) {
+      let [a0, a1, a2, b0, b1, b2] = coeffs[i];
+      for (let j = 0; j < freqs.length; ++j) {
+        let w = 2 * Math.PI * freqs[j] / sampleRate;
+        let phi = 4 * Math.pow(Math.sin(w / 2), 2);
+        gains[j] += (10 * Math.log10(Math.pow(b0 + b1 + b2, 2) + (b0 * b2 * phi - (b1 * (b0 + b2) + 4 * b0 * b2)) * phi) - 
+                     10 * Math.log10(Math.pow(a0 + a1 + a2, 2) + (a0 * a2 * phi - (a1 * (a0 + a2) + 4 * a0 * a2)) * phi));
+      }
+    } 
+    return gains;
+  };
+  
+  let filters_to_coeffs = function (filters, sampleRate) {
+    return filters.map(f => {
+      if (!f.freq || f.gain == null || !f.q) return null;
+      let freq = Math.max(1e-6, Math.min(f.freq / (sampleRate || 48000), 1));
+      let q = Math.max(1e-4, Math.min(f.q, 1000));
+      let gain = Math.max(-40, Math.min(f.gain, 40));
+      
+      let w0 = 2 * Math.PI * freq;
+      let sin = Math.sin(w0);
+      let cos = Math.cos(w0);
+      let a = Math.pow(10, (gain / 40));
+      let alpha = sin / (2 * q);
+      let alphamod = (2 * Math.sqrt(a) * alpha) || 0;
+      
+      if (f.type === "LSQ") {
+        return [ 
+          1.0, 
+          -2*((a-1)+(a+1)*cos)/((a+1)+(a-1)*cos+alphamod), 
+          ((a+1)+(a-1)*cos-alphamod)/((a+1)+(a-1)*cos+alphamod), 
+          a*((a+1)-(a-1)*cos+alphamod)/((a+1)+(a-1)*cos+alphamod), 
+          2*a*((a-1)-(a+1)*cos)/((a+1)+(a-1)*cos+alphamod), 
+          a*((a+1)-(a-1)*cos-alphamod)/((a+1)+(a-1)*cos+alphamod) 
+        ];
+      }
+      if (f.type === "HSQ") {
+        return [ 
+          1.0, 
+          2*((a-1)-(a+1)*cos)/((a+1)-(a-1)*cos+alphamod), 
+          ((a+1)-(a-1)*cos-alphamod)/((a+1)-(a-1)*cos+alphamod), 
+          a*((a+1)+(a-1)*cos+alphamod)/((a+1)-(a-1)*cos+alphamod), 
+          -2*a*((a-1)+(a+1)*cos)/((a+1)-(a-1)*cos+alphamod), 
+          a*((a+1)+(a-1)*cos-alphamod)/((a+1)-(a-1)*cos+alphamod) 
+        ];
+      }
+      if (f.type === "PK") {
+        return [ 
+          1.0, 
+          -2*cos/(1+alpha/a), 
+          (1-alpha/a)/(1+alpha/a), 
+          (1+alpha*a)/(1+alpha/a), 
+          -2*cos/(1+alpha/a), 
+          (1-alpha*a)/(1+alpha/a) 
+        ];
+      }
+      return null;
+    }).filter(f => f);
+  };
+  
+  return { calc_gains, filters_to_coeffs };
+})();
+
+/* ── APP LOGIC ───────────────────────────────────────────────── */
 (function () {
-  // ── State ─────────────────────────────────────────────────────
-  let playlist    = [];   
-  let currentIdx  = -1;
-  let shuffle     = false;
-  let repeatMode  = 0;    // 0=off 1=all 2=one
-  let eqEnabled   = true;
+  let playlist = [];
+  let currentIdx = -1;
+  let shuffle = false;
+  let repeatMode = 0;
+  let eqEnabled = true;
   let activeFilters = [];
-  let preampDb    = 0;
-
-  // ── Audio graph ───────────────────────────────────────────────
-  let audioCtx    = null;
-  let sourceNode  = null;
-  let gainNode    = null;       // preamp
-  let biquads     = [];         // BiquadFilterNode[]
-  const audioEl   = new Audio();
-  audioEl.crossOrigin = 'anonymous';
+  let preampDb = 0;
+  let tubeDrive = 0;
+  
+  // NATIVE WEBAUDIO GRAPH
+  let audioCtx = null;
+  let sourceNode = null;
+  let preampNode = null;
+  let biquadNodes = [];
+  let tubeNode = null;
+  let limiterNode = null;
+  let makeupNode = null;
+  
+  const audioEl = new Audio(); 
+  audioEl.crossOrigin = 'anonymous'; 
   audioEl.preload = 'auto';
-
-  let makeupNode = null; // always last node → destination, never rebuilt
+  
+  const MAX_BANDS = 30;
 
   function ensureCtx() {
     if (audioCtx) return;
+    
     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     sourceNode = audioCtx.createMediaElementSource(audioEl);
-    gainNode   = audioCtx.createGain();
-    makeupNode = audioCtx.createGain();
+    
+    preampNode = audioCtx.createGain();
+    
+    // Wire music to EQ engine
+    sourceNode.connect(preampNode);
+    
+    let prev = preampNode;
+    
+    // Create persistent Biquads
+    for(let i = 0; i < MAX_BANDS; i++) {
+      let f = audioCtx.createBiquadFilter(); 
+      f.type = 'peaking'; 
+      f.gain.value = 0;
+      biquadNodes.push(f); 
+      prev.connect(f); 
+      prev = f;
+    }
+    
+    tubeNode = audioCtx.createWaveShaper(); 
+    tubeNode.oversample = '4x';
+    prev.connect(tubeNode);
+    
+    // BRICKWALL LIMITER
+    limiterNode = audioCtx.createDynamicsCompressor();
+    limiterNode.threshold.value = -0.5; 
+    limiterNode.knee.value = 0.0; 
+    limiterNode.ratio.value = 20.0; 
+    limiterNode.attack.value = 0.005; 
+    limiterNode.release.value = 0.050;
+    
+    tubeNode.connect(limiterNode);
+
+    makeupNode = audioCtx.createGain(); 
     makeupNode.gain.value = 1.0;
-    sourceNode.connect(gainNode);
-    makeupNode.connect(audioCtx.destination); // permanent, never changes
+    
+    limiterNode.connect(makeupNode); 
+    makeupNode.connect(audioCtx.destination); 
   }
 
-  let chainTailNode = null;
+  function createTubeCurve(amount) {
+    const k = typeof amount === 'number' ? amount : 50; 
+    const n_samples = 44100; 
+    const curve = new Float32Array(n_samples); 
+    const deg = Math.PI / 180;
+    for (let i = 0; i < n_samples; ++i) { 
+      let x = i * 2 / n_samples - 1; 
+      curve[i] = (3 + k) * x * 20 * deg / (Math.PI + k * Math.abs(x)); 
+    } 
+    return curve;
+  }
 
-  function rebuildEQChain() {
+  // Smooth, pop-free audio updates
+  function updateAudioGraph() {
     if (!audioCtx) return;
+    
+    const now = audioCtx.currentTime;
+    
+    // Smoothly adjust preamp volume
+    preampNode.gain.setTargetAtTime(eqEnabled ? Math.pow(10, preampDb / 20) : 1.0, now, 0.02);
 
-    if (chainTailNode) {
-      try { chainTailNode.disconnect(makeupNode); } catch(e) {}
+    for (let i = 0; i < MAX_BANDS; i++) {
+      const node = biquadNodes[i];
+      if (eqEnabled && i < activeFilters.length) {
+        const f = activeFilters[i];
+        node.type = f.type === 'LSQ' ? 'lowshelf' : f.type === 'HSQ' ? 'highshelf' : 'peaking';
+        node.frequency.setTargetAtTime(f.freq, now, 0.02);
+        node.Q.setTargetAtTime(f.q, now, 0.02);
+        node.gain.setTargetAtTime(f.gain, now, 0.02);
+      } else {
+        node.gain.setTargetAtTime(0, now, 0.02); 
+      }
     }
-    biquads.forEach(n => { try { n.disconnect(); } catch(e){} });
-    biquads = [];
-
-    gainNode.gain.value = Math.pow(10, preampDb / 20);
-
-    if (!eqEnabled || activeFilters.length === 0) {
-      gainNode.connect(makeupNode);
-      chainTailNode = gainNode;
-      return;
-    }
-
-    const SR = audioCtx.sampleRate;
-    let prev = gainNode;
-    for (const f of activeFilters) {
-      let coeffs;
-      if      (f.type === 'PK')  coeffs = Equalizer.peaking(f.freq, f.q, f.gain, SR);
-      else if (f.type === 'LSQ') coeffs = Equalizer.lowshelf(f.freq, f.q, f.gain, SR);
-      else if (f.type === 'HSQ') coeffs = Equalizer.highshelf(f.freq, f.q, f.gain, SR);
-      else continue;
-      const [, a1, a2, b0, b1, b2] = coeffs;
-      const node = audioCtx.createIIRFilter([b0, b1, b2], [1, a1, a2]);
-      prev.connect(node);
-      prev = node;
-      biquads.push(node);
-    }
-
-    prev.connect(makeupNode);
-    chainTailNode = prev;
+    
+    tubeNode.curve = (tubeDrive > 0 && eqEnabled) ? createTubeCurve(tubeDrive * 4) : null;
   }
 
-  // ══════════════════════════════════════════════════════════════
-  //  INTERACTIVE PEQ ENGINE
-  // ══════════════════════════════════════════════════════════════
-
-  // ── Band state ────────────────────────────────────────────────
   let bands = [];
   let selectedBandId = null;
   let nextBandId = 1;
+  
+  const PLOT_FREQS = Array.from({length: 600}, (_, i) => 20 * Math.pow(20000 / 20, i / 599));
+  const DB_MIN = -20;
+  const DB_MAX = 20;
 
-  const PLOT_FREQS = (() => {
-    const n = 600;
-    return Array.from({length:n}, (_,i) => 20 * Math.pow(20000/20, i/(n-1)));
-  })();
-
-  const DB_MIN = -20, DB_MAX = 20;
-  function freqToX(f, W, pad) { return pad.l + Math.log10(f/20)/Math.log10(20000/20)*(W-pad.l-pad.r); }
-  function xToFreq(x, W, pad) { return 20 * Math.pow(20000/20, (x-pad.l)/(W-pad.l-pad.r)); }
-  function dbToY(db, H, pad)  { return pad.t + (1-(db-DB_MIN)/(DB_MAX-DB_MIN))*(H-pad.t-pad.b); }
-  function yToDb(y, H, pad)   { return DB_MAX - (y-pad.t)/(H-pad.t-pad.b)*(DB_MAX-DB_MIN); }
-
-  function computeCurve(SR) {
-    const activeBands = bands.filter(b => b.enabled);
-    if (!activeBands.length) return PLOT_FREQS.map(() => 0);
-    const coeffs = Equalizer.filters_to_coeffs(activeBands, SR || 48000);
-    return Equalizer.calc_gains(PLOT_FREQS, coeffs, SR || 48000);
+  function freqToX(f, W, pad) { 
+    return pad.l + Math.log10(f / 20) / Math.log10(20000 / 20) * (W - pad.l - pad.r); 
   }
 
-  function computeAutoPreamp() {
-    const activeBands = bands.filter(b => b.enabled);
-    if (!activeBands.length) return 0;
-    const coeffs = Equalizer.filters_to_coeffs(activeBands, 48000);
-    const gains  = Equalizer.calc_gains(PLOT_FREQS, coeffs, 48000);
-    const maxG   = Math.max(0, ...gains);
-    return -maxG;
+  function xToFreq(x, W, pad) { 
+    return 20 * Math.pow(20000 / 20, (x - pad.l) / (W - pad.l - pad.r)); 
+  }
+
+  function dbToY(db, H, pad) { 
+    return pad.t + (1 - (db - DB_MIN) / (DB_MAX - DB_MIN)) * (H - pad.t - pad.b); 
+  }
+
+  function yToDb(y, H, pad) { 
+    return DB_MAX - (y - pad.t) / (H - pad.t - pad.b) * (DB_MAX - DB_MIN); 
+  }
+
+  function computeCurve(SR) { 
+    const activeBands = bands.filter(b => b.enabled); 
+    if (!activeBands.length) return PLOT_FREQS.map(() => 0); 
+    return Equalizer.calc_gains(PLOT_FREQS, Equalizer.filters_to_coeffs(activeBands, SR || 48000), SR || 48000); 
+  }
+
+  function computeAutoPreamp() { 
+    const activeBands = bands.filter(b => b.enabled); 
+    if (!activeBands.length) return 0; 
+    return -Math.max(0, ...Equalizer.calc_gains(PLOT_FREQS, Equalizer.filters_to_coeffs(activeBands, 48000), 48000)); 
   }
 
   function syncEQ() {
-    activeFilters = bands.filter(b => b.enabled);
+    activeFilters = bands.filter(b => b.enabled); 
     preampDb = computeAutoPreamp();
     document.getElementById('preamp-val').textContent = preampDb.toFixed(1) + ' dB';
-    rebuildEQChain();
-    drawCurve();
-    renderBandStrip();
-    updateTableValues();
+    updateAudioGraph(); 
+    drawCurve(); 
+    renderBandStrip(); 
+    updateTableValues(); 
     updateSimpleSliders();
   }
 
-  const canvas  = document.getElementById('eq-canvas');
-  const ctx2d   = canvas.getContext('2d');
-  const PAD     = { l:42, r:14, t:14, b:28 };
+  const canvas = document.getElementById('eq-canvas');
+  const ctx2d = canvas.getContext('2d');
+  const PAD = { l: 42, r: 14, t: 14, b: 28 };
 
-  function resizeCanvas() {
-    const wrap = document.getElementById('eq-canvas-wrap');
-    const dpr  = devicePixelRatio || 1;
-    canvas.width  = wrap.clientWidth  * dpr;
-    canvas.height = wrap.clientHeight * dpr;
-    canvas.style.width  = wrap.clientWidth  + 'px';
-    canvas.style.height = wrap.clientHeight + 'px';
-    ctx2d.scale(dpr, dpr);
-    drawCurve();
+  function resizeCanvas() { 
+    const wrap = document.getElementById('eq-canvas-wrap'); 
+    if (!wrap) return; 
+    const dpr = devicePixelRatio || 1; 
+    canvas.width = wrap.clientWidth * dpr; 
+    canvas.height = wrap.clientHeight * dpr; 
+    canvas.style.width = wrap.clientWidth + 'px'; 
+    canvas.style.height = wrap.clientHeight + 'px'; 
+    ctx2d.scale(dpr, dpr); 
+    drawCurve(); 
   }
 
   function drawCurve() {
-    const W = canvas.clientWidth, H = canvas.clientHeight;
-    if (!W || !H) return;
+    const W = canvas.clientWidth;
+    const H = canvas.clientHeight; 
+    if (!W || !H) return; 
+    
     ctx2d.clearRect(0, 0, W, H);
+    
+    const tc = window.themeColors || { 
+      grid: 'rgba(255,255,255,0.04)', 
+      strong: 'rgba(255,255,255,0.1)', 
+      glow: 'rgba(124,106,247,0.8)', 
+      fill: 'rgba(124,106,247,0.25)', 
+      border: 'rgba(255,255,255,0.25)', 
+      muted: '#7a7a85' 
+    };
+    
+    ctx2d.strokeStyle = tc.grid; 
+    ctx2d.lineWidth = 1; 
+    ctx2d.setLineDash([3, 3]); 
+    
+    [20, 30, 50, 100, 200, 300, 500, 1000, 2000, 3000, 5000, 10000, 20000].forEach(f => { 
+      const x = freqToX(f, W, PAD); 
+      ctx2d.beginPath(); 
+      ctx2d.moveTo(x, PAD.t); 
+      ctx2d.lineTo(x, H - PAD.b); 
+      ctx2d.stroke(); 
+    }); 
+    
+    [-18, -12, -9, -6, -3, 0, 3, 6, 9, 12, 18].forEach(db => { 
+      const y = dbToY(db, H, PAD); 
+      ctx2d.strokeStyle = db === 0 ? tc.strong : tc.grid; 
+      ctx2d.beginPath(); 
+      ctx2d.moveTo(PAD.l, y); 
+      ctx2d.lineTo(W - PAD.r, y); 
+      ctx2d.stroke(); 
+    }); 
+    
+    ctx2d.setLineDash([]); 
+    
+    ctx2d.font = '9px DM Mono, monospace'; 
+    ctx2d.fillStyle = tc.muted; 
+    ctx2d.textAlign = 'center'; 
+    
+    [50, 100, 200, 500, '1k', '2k', '5k', '10k', '20k'].forEach((lbl) => { 
+      const x = freqToX(typeof lbl === 'string' ? parseInt(lbl) * 1000 : lbl, W, PAD); 
+      ctx2d.fillText(lbl, x, H - PAD.b + 13); 
+    }); 
+    
+    ctx2d.textAlign = 'right'; 
+    [-18, -12, -6, 0, 6, 12, 18].forEach(db => {
+      ctx2d.fillText((db > 0 ? '+' : '') + db, PAD.l - 5, dbToY(db, H, PAD) + 3.5);
+    });
 
-    const gridFreqs = [20,30,50,100,200,300,500,1000,2000,3000,5000,10000,20000];
-    ctx2d.strokeStyle = '#1e1e24'; ctx2d.lineWidth = 1;
-    gridFreqs.forEach(f => {
-      const x = freqToX(f, W, PAD);
-      ctx2d.beginPath(); ctx2d.moveTo(x, PAD.t); ctx2d.lineTo(x, H-PAD.b); ctx2d.stroke();
-    });
-    const dbLines = [-18,-12,-9,-6,-3,0,3,6,9,12,18];
-    dbLines.forEach(db => {
-      const y = dbToY(db, H, PAD);
-      ctx2d.strokeStyle = db === 0 ? '#333340' : '#1e1e24';
-      ctx2d.lineWidth   = db === 0 ? 1.5 : 1;
-      ctx2d.beginPath(); ctx2d.moveTo(PAD.l, y); ctx2d.lineTo(W-PAD.r, y); ctx2d.stroke();
-    });
-
-    ctx2d.font = '9px DM Mono, monospace';
-    ctx2d.fillStyle = '#4a4a55';
-    ctx2d.textAlign = 'center';
-    [50,100,200,500,'1k','2k','5k','10k','20k'].forEach((lbl, i) => {
-      const f = typeof lbl === 'string' ? parseInt(lbl)*1000 : lbl;
-      const x = freqToX(f, W, PAD);
-      ctx2d.fillText(lbl, x, H-PAD.b+13);
-    });
-    ctx2d.textAlign = 'right';
-    dbLines.filter(db => db % 6 === 0).forEach(db => {
-      ctx2d.fillText((db>0?'+':'')+db, PAD.l-5, dbToY(db,H,PAD)+3.5);
-    });
-
-    bands.forEach(band => {
-      if (!band.enabled) return;
-      const coeffs = Equalizer.filters_to_coeffs([band], 48000);
-      const gains  = Equalizer.calc_gains(PLOT_FREQS, coeffs, 48000);
-      const isSel  = band.id === selectedBandId;
-      ctx2d.strokeStyle = isSel ? 'rgba(168,159,249,0.35)' : 'rgba(124,106,247,0.15)';
-      ctx2d.lineWidth   = isSel ? 1.5 : 1;
-      ctx2d.beginPath();
-      gains.forEach((g, i) => {
+    bands.forEach(band => { 
+      if (!band.enabled) return; 
+      const gains = Equalizer.calc_gains(PLOT_FREQS, Equalizer.filters_to_coeffs([band], 48000), 48000); 
+      ctx2d.strokeStyle = band.id === selectedBandId ? 'rgba(124,106,247,0.6)' : 'rgba(124,106,247,0.2)'; 
+      ctx2d.lineWidth = band.id === selectedBandId ? 1.5 : 1; 
+      ctx2d.beginPath(); 
+      gains.forEach((g, i) => { 
         const x = freqToX(PLOT_FREQS[i], W, PAD);
-        const y = dbToY(g, H, PAD);
-        i === 0 ? ctx2d.moveTo(x,y) : ctx2d.lineTo(x,y);
-      });
-      ctx2d.stroke();
+        const y = dbToY(g, H, PAD); 
+        i === 0 ? ctx2d.moveTo(x, y) : ctx2d.lineTo(x, y); 
+      }); 
+      ctx2d.stroke(); 
     });
-
-    const gains = computeCurve(48000);
-    ctx2d.strokeStyle = eqEnabled ? '#a89ff9' : '#4a4a55';
-    ctx2d.lineWidth   = 2;
-    ctx2d.shadowColor = eqEnabled ? 'rgba(124,106,247,0.4)' : 'transparent';
-    ctx2d.shadowBlur  = 6;
-    ctx2d.beginPath();
-    gains.forEach((g, i) => {
+    
+    const gains = computeCurve(48000); 
+    ctx2d.strokeStyle = eqEnabled ? (document.documentElement.getAttribute('data-theme') === 'light' ? '#6366f1' : '#a89ff9') : tc.muted; 
+    ctx2d.lineWidth = 2.5; 
+    ctx2d.shadowColor = eqEnabled ? tc.glow : 'transparent'; 
+    ctx2d.shadowBlur = 12; 
+    ctx2d.beginPath(); 
+    
+    gains.forEach((g, i) => { 
       const x = freqToX(PLOT_FREQS[i], W, PAD);
-      const y = dbToY(g, H, PAD);
-      i === 0 ? ctx2d.moveTo(x,y) : ctx2d.lineTo(x,y);
-    });
-    ctx2d.stroke();
+      const y = dbToY(g, H, PAD); 
+      i === 0 ? ctx2d.moveTo(x, y) : ctx2d.lineTo(x, y); 
+    }); 
+    ctx2d.stroke(); 
     ctx2d.shadowBlur = 0;
+    
+    if (eqEnabled && activeFilters.length > 0) { 
+      ctx2d.lineTo(freqToX(PLOT_FREQS[PLOT_FREQS.length - 1], W, PAD), H - PAD.b); 
+      ctx2d.lineTo(freqToX(PLOT_FREQS[0], W, PAD), H - PAD.b); 
+      ctx2d.closePath(); 
+      let gradient = ctx2d.createLinearGradient(0, PAD.t, 0, H - PAD.b); 
+      gradient.addColorStop(0, tc.fill); 
+      gradient.addColorStop(1, 'rgba(124,106,247,0.0)'); 
+      ctx2d.fillStyle = gradient; 
+      ctx2d.fill(); 
+    }
 
-    bands.forEach(band => {
-      const x   = freqToX(band.freq, W, PAD);
-      const y   = dbToY(band.gain, H, PAD);
-      const sel = band.id === selectedBandId;
-      ctx2d.beginPath();
-      ctx2d.arc(x, y, sel ? 7 : 5, 0, Math.PI*2);
-      ctx2d.fillStyle   = band.enabled ? (sel ? '#a89ff9' : '#7c6af7') : '#3a3a45';
-      ctx2d.strokeStyle = sel ? '#fff' : 'rgba(255,255,255,0.25)';
-      ctx2d.lineWidth   = sel ? 1.5 : 1;
-      ctx2d.fill(); ctx2d.stroke();
+    bands.forEach(band => { 
+      const x = freqToX(band.freq, W, PAD);
+      const y = dbToY(band.gain, H, PAD);
+      const sel = band.id === selectedBandId; 
+      ctx2d.beginPath(); 
+      ctx2d.arc(x, y, sel ? 7 : 5, 0, Math.PI * 2); 
+      ctx2d.fillStyle = band.enabled ? (sel ? '#a89ff9' : '#7c6af7') : '#3a3a45'; 
+      ctx2d.strokeStyle = sel ? '#fff' : tc.border; 
+      ctx2d.lineWidth = sel ? 1.5 : 1; 
+      ctx2d.fill(); 
+      ctx2d.stroke(); 
     });
+  } 
+  
+  window.redrawGraph = drawCurve;
+
+  function fmtFreq(f) { 
+    return f >= 1000 ? (f / 1000).toFixed(f % 1000 === 0 ? 0 : 1) + 'k' : Math.round(f) + ''; 
+  }
+  
+  function fmtGain(g) { 
+    return (g >= 0 ? '+' : '') + g.toFixed(1) + ' dB'; 
   }
 
-  function fmtFreq(f) { return f >= 1000 ? (f/1000).toFixed(f%1000===0?0:1)+'k' : Math.round(f)+''; }
-  function fmtGain(g) { return (g>=0?'+':'')+g.toFixed(1)+' dB'; }
-
   function renderBandStrip() {
-    const strip = document.getElementById('band-strip');
+    const strip = document.getElementById('band-strip'); 
     strip.innerHTML = '';
+    
     bands.forEach(band => {
-      const card = document.createElement('div');
-      card.className = 'band-card' + (band.id===selectedBandId?' selected':'') + (band.enabled?'':' disabled');
+      const card = document.createElement('div'); 
+      card.className = 'band-card' + (band.id === selectedBandId ? ' selected' : '') + (band.enabled ? '' : ' disabled'); 
       card.dataset.id = band.id;
-
+      
       const gainClass = band.gain > 0.05 ? 'pos' : band.gain < -0.05 ? 'neg' : '';
-
+      
       card.innerHTML = `
-        <div class="band-num">BAND ${bands.indexOf(band)+1}</div>
+        <div class="band-num">BAND ${bands.indexOf(band) + 1}</div>
         <select class="band-type-sel" data-id="${band.id}">
-          <option value="PK"  ${band.type==='PK' ?'selected':''}>PK</option>
-          <option value="LSQ" ${band.type==='LSQ'?'selected':''}>LSQ</option>
-          <option value="HSQ" ${band.type==='HSQ'?'selected':''}>HSQ</option>
+          <option value="PK" ${band.type === 'PK' ? 'selected' : ''}>PK</option>
+          <option value="LSQ" ${band.type === 'LSQ' ? 'selected' : ''}>LSQ</option>
+          <option value="HSQ" ${band.type === 'HSQ' ? 'selected' : ''}>HSQ</option>
         </select>
-        <div class="band-val">${fmtFreq(band.freq)} Hz</div>
-        <div class="band-gain ${gainClass}">${fmtGain(band.gain)}</div>
+        <div class="band-val">${(band.freq >= 1000 ? (band.freq / 1000).toFixed(band.freq % 1000 === 0 ? 0 : 1) + 'k' : Math.round(band.freq))} Hz</div>
+        <div class="band-gain ${band.gain > 0.05 ? 'pos' : band.gain < -0.05 ? 'neg' : ''}">${(band.gain >= 0 ? '+' : '') + band.gain.toFixed(1) + ' dB'}</div>
         <div class="band-val" style="color:var(--muted)">Q ${band.q.toFixed(2)}</div>
-        <button class="band-delete" data-id="${band.id}" title="Remove band">✕</button>`;
-
-      card.addEventListener('click', e => {
-        if (e.target.classList.contains('band-delete') || e.target.classList.contains('band-type-sel')) return;
-        selectedBandId = band.id;
-        drawCurve(); renderBandStrip();
+        <button class="band-delete" data-id="${band.id}">✕</button>
+      `;
+      
+      card.addEventListener('click', e => { 
+        if (e.target.tagName !== 'BUTTON' && e.target.tagName !== 'SELECT') { 
+          selectedBandId = band.id; 
+          drawCurve(); 
+          renderBandStrip(); 
+        }
       });
-
-      card.querySelector('.band-type-sel').addEventListener('change', e => {
-        e.stopPropagation();
-        band.type = e.target.value;
-        syncEQ();
-      });
-      card.querySelector('.band-delete').addEventListener('click', e => {
-        e.stopPropagation();
-        bands = bands.filter(b => b.id !== band.id);
-        if (selectedBandId === band.id) selectedBandId = bands.length ? bands[bands.length-1].id : null;
-        syncEQ();
-      });
-
+      
+      card.querySelector('.band-type-sel').addEventListener('change', e => { 
+        band.type = e.target.value; 
+        syncEQ(); 
+      }); 
+      
+      card.querySelector('.band-delete').addEventListener('click', () => { 
+        bands = bands.filter(b => b.id !== band.id); 
+        if (selectedBandId === band.id) {
+          selectedBandId = bands.length ? bands[bands.length - 1].id : null; 
+        }
+        syncEQ(); 
+      }); 
+      
       strip.appendChild(card);
     });
   }
 
-  let dragBand = null, dragStartY = 0, dragStartGain = 0;
-  let dragStartX = 0, dragStartFreq = 0;
-
-  function hitTest(cx, cy) {
-    const W = canvas.clientWidth, H = canvas.clientHeight;
-    for (let i = bands.length-1; i >= 0; i--) {
-      const b = bands[i];
-      const bx = freqToX(b.freq, W, PAD);
-      const by = dbToY(b.gain, H, PAD);
-      if (Math.hypot(cx-bx, cy-by) < 10) return b;
-    }
-    return null;
-  }
-
-  canvas.addEventListener('mousedown', e => {
-    const rect = canvas.getBoundingClientRect();
-    const cx = e.clientX - rect.left, cy = e.clientY - rect.top;
-    const hit = hitTest(cx, cy);
-    if (hit) {
-      dragBand = hit;
-      selectedBandId = hit.id;
-      dragStartX = cx; dragStartFreq = hit.freq;
-      dragStartY = cy; dragStartGain = hit.gain;
-      canvas.style.cursor = 'grabbing';
-      renderBandStrip();
-    }
-  });
-
-  window.addEventListener('mousemove', e => {
-    if (!dragBand) return;
-    const rect = canvas.getBoundingClientRect();
-    const W = canvas.clientWidth, H = canvas.clientHeight;
-    const cx = e.clientX - rect.left, cy = e.clientY - rect.top;
-
-    const newFreq = xToFreq(cx, W, PAD);
-    dragBand.freq = Math.max(20, Math.min(20000, newFreq));
-
-    const rawDb = yToDb(cy, H, PAD);
-    const snap = e.shiftKey ? 0.1 : 0.5;
-    dragBand.gain = Math.max(-20, Math.min(20, Math.round(rawDb/snap)*snap));
-
-    syncEQ();
-  });
-
-  window.addEventListener('mouseup', () => {
-    if (dragBand) { canvas.style.cursor = 'crosshair'; dragBand = null; }
-  });
-
-  const qTooltip = document.getElementById('q-tooltip');
+  let dragBand = null;
   let qTooltipTimer = null;
 
-  function showQTooltip(x, y, band) {
-    qTooltip.textContent = 'Q ' + band.q.toFixed(2) + '  (scroll to adjust)';
-    qTooltip.style.left = (x + 14) + 'px';
-    qTooltip.style.top  = (y - 28) + 'px';
-    qTooltip.style.display = 'block';
-    clearTimeout(qTooltipTimer);
-    qTooltipTimer = setTimeout(() => { qTooltip.style.display = 'none'; }, 1400);
+  function hitTest(cx, cy) { 
+    for (let i = bands.length - 1; i >= 0; i--) { 
+      let bandX = freqToX(bands[i].freq, canvas.clientWidth, PAD);
+      let bandY = dbToY(bands[i].gain, canvas.clientHeight, PAD);
+      if (Math.hypot(cx - bandX, cy - bandY) < 10) {
+        return bands[i]; 
+      }
+    } 
+    return null; 
   }
 
-  canvas.addEventListener('mousemove', e => {
-    if (dragBand) return;
-    const rect = canvas.getBoundingClientRect();
-    const hit = hitTest(e.clientX - rect.left, e.clientY - rect.top);
-    canvas.style.cursor = hit ? 'grab' : 'crosshair';
+  canvas.addEventListener('mousedown', e => { 
+    const hit = hitTest(e.offsetX, e.offsetY); 
+    if (hit) { 
+      dragBand = hit; 
+      selectedBandId = hit.id; 
+      canvas.style.cursor = 'grabbing'; 
+      renderBandStrip(); 
+    }
   });
 
-  canvas.addEventListener('wheel', e => {
-    const rect = canvas.getBoundingClientRect();
-    const cx = e.clientX - rect.left, cy = e.clientY - rect.top;
-    const hit = hitTest(cx, cy);
-    if (!hit) return;
-    e.preventDefault();
+  window.addEventListener('mousemove', e => { 
+    if (!dragBand) return; 
+    const rect = canvas.getBoundingClientRect(); 
+    let newFreq = xToFreq(e.clientX - rect.left, canvas.clientWidth, PAD);
+    dragBand.freq = Math.max(20, Math.min(20000, newFreq)); 
+    const snap = e.shiftKey ? 0.1 : 0.5; 
+    let rawDb = yToDb(e.clientY - rect.top, canvas.clientHeight, PAD);
+    dragBand.gain = Math.max(-20, Math.min(20, Math.round(rawDb / snap) * snap)); 
+    syncEQ(); 
+  });
+
+  window.addEventListener('mouseup', () => { 
+    if (dragBand) { 
+      canvas.style.cursor = 'crosshair'; 
+      dragBand = null; 
+    } 
+  });
+
+  canvas.addEventListener('wheel', e => { 
+    const hit = hitTest(e.offsetX, e.offsetY); 
+    if (!hit) return; 
+    e.preventDefault(); 
+    
     const step = e.shiftKey ? 0.01 : 0.05;
-    const delta = e.deltaY > 0 ? -step : step;
-    hit.q = Math.max(0.1, Math.min(10, Math.round((hit.q + delta) * 100) / 100));
-    selectedBandId = hit.id;
-    showQTooltip(e.clientX, e.clientY, hit);
-    syncEQ();
+    let delta = e.deltaY > 0 ? -1 : 1;
+    hit.q = Math.max(0.1, Math.min(10, Math.round((hit.q + delta * step) * 100) / 100)); 
+    
+    selectedBandId = hit.id; 
+    syncEQ(); 
+    
+    const qtt = document.getElementById('q-tooltip'); 
+    qtt.textContent = 'Q ' + hit.q.toFixed(2); 
+    qtt.style.left = (e.clientX + 14) + 'px'; 
+    qtt.style.top = (e.clientY - 28) + 'px'; 
+    qtt.style.display = 'block'; 
+    
+    clearTimeout(qTooltipTimer); 
+    qTooltipTimer = setTimeout(() => {
+      qtt.style.display = 'none';
+    }, 1000); 
   }, { passive: false });
 
-  canvas.addEventListener('dblclick', e => {
-    const rect = canvas.getBoundingClientRect();
-    const cx = e.clientX - rect.left, cy = e.clientY - rect.top;
-    if (hitTest(cx, cy)) return;
-    const W = canvas.clientWidth, H = canvas.clientHeight;
-    const freq = Math.round(xToFreq(cx, W, PAD));
-    const gain = Math.round(yToDb(cy, H, PAD) * 2) / 2;
-    addBand({ freq: Math.max(20, Math.min(20000, freq)), gain: Math.max(-20,Math.min(20,gain)), q: 1.0, type: 'PK' });
+  canvas.addEventListener('dblclick', e => { 
+    if (!hitTest(e.offsetX, e.offsetY)) {
+      addBand({ 
+        freq: Math.max(20, Math.min(20000, Math.round(xToFreq(e.offsetX, canvas.clientWidth, PAD)))), 
+        gain: Math.max(-20, Math.min(20, Math.round(yToDb(e.offsetY, canvas.clientHeight, PAD) * 2) / 2)), 
+        q: 1.0, 
+        type: 'PK' 
+      }); 
+    }
   });
 
-  function addBand(opts) {
-    const band = {
-      id:      nextBandId++,
-      type:    opts.type  || 'PK',
-      freq:    opts.freq  || 1000,
-      gain:    opts.gain  !== undefined ? opts.gain : 0,
-      q:       opts.q     || 1.0,
-      enabled: true,
-    };
-    bands.push(band);
-    selectedBandId = band.id;
-    syncEQ();
-    const strip = document.getElementById('band-strip');
-    strip.scrollLeft = strip.scrollWidth;
-  }
-
-  function parseFilterText(text) {
-    const filters = [];
-    let preamp = 0;
-    const chunks = text.replace(/\r\n/g,'\n').split(/(?=Filter\s+\d+:|Preamp:)/i).map(s=>s.trim()).filter(Boolean);
-    for (const chunk of chunks) {
-      const pm = chunk.match(/Preamp:\s*([-\d.]+)\s*dB/i);
-      if (pm) { preamp = parseFloat(pm[1]); continue; }
-      const m = chunk.match(/Filter\s+\d+:\s+ON\s+(\w+)\s+Fc\s+([\d.]+)\s+Hz\s+Gain\s+([-\d.]+)\s+dB\s+Q\s+([\d.]+)/i);
-      if (m) {
-        let type = m[1].toUpperCase();
-        if (type==='LS'||type==='LSC') type='LSQ';
-        if (type==='HS'||type==='HSC') type='HSQ';
-        filters.push({ type, freq:parseFloat(m[2]), gain:parseFloat(m[3]), q:parseFloat(m[4]) });
-      }
+  canvas.addEventListener('mousemove', e => { 
+    if (!dragBand) {
+      canvas.style.cursor = hitTest(e.offsetX, e.offsetY) ? 'grab' : 'crosshair'; 
     }
-    return { filters, preamp };
+  });
+
+  function addBand(opts) { 
+    if (bands.length >= MAX_BANDS) { 
+      showMsg('Max 30 bands reached.', 'error'); 
+      return; 
+    } 
+    
+    bands.push({ 
+      id: nextBandId++, 
+      type: opts.type || 'PK', 
+      freq: opts.freq || 1000, 
+      gain: opts.gain !== undefined ? opts.gain : 0, 
+      q: opts.q || 1.0, 
+      enabled: true 
+    }); 
+    
+    selectedBandId = bands[bands.length - 1].id; 
+    syncEQ(); 
+    
+    setTimeout(() => {
+      document.getElementById('band-strip').scrollLeft = 9999;
+    }, 10); 
   }
 
   function importFilters(text) {
-    const { filters, preamp } = parseFilterText(text);
-    if (!filters.length) { showMsg('No valid filters found.', 'error'); return false; }
-    bands = filters.map(f => ({ ...f, id: nextBandId++, enabled: true }));
-    selectedBandId = bands.length ? bands[0].id : null;
-    if (preamp !== 0) {
-      preampDb = preamp;
-      activeFilters = bands.filter(b => b.enabled);
-      document.getElementById('preamp-val').textContent = preampDb.toFixed(1) + ' dB';
-      rebuildEQChain();
-      drawCurve();
-      renderBandStrip();
-    } else {
-      syncEQ();
+    const filters = []; 
+    let preamp = 0;
+    
+    const chunks = text.replace(/\r\n/g, '\n').split(/(?=Filter\s+\d+:|Preamp:)/i).map(s => s.trim()).filter(Boolean);
+    
+    chunks.forEach(chunk => {
+      const pm = chunk.match(/Preamp:\s*([-\d.]+)\s*dB/i); 
+      if (pm) preamp = parseFloat(pm[1]);
+      
+      const m = chunk.match(/Filter\s+\d+:\s+ON\s+(\w+)\s+Fc\s+([\d.]+)\s+Hz\s+Gain\s+([-\d.]+)\s+dB\s+Q\s+([\d.]+)/i);
+      if (m) {
+        let rawType = m[1].toUpperCase();
+        let finalType = 'PK';
+        if (rawType === 'LS' || rawType === 'LSC') finalType = 'LSQ';
+        if (rawType === 'HS' || rawType === 'HSC') finalType = 'HSQ';
+        
+        filters.push({ 
+          type: finalType, 
+          freq: parseFloat(m[2]), 
+          gain: parseFloat(m[3]), 
+          q: parseFloat(m[4]) 
+        });
+      }
+    });
+    
+    if (!filters.length) { 
+      showMsg('No valid filters found.', 'error'); 
+      return false; 
     }
-    showMsg('✓ ' + filters.length + ' bands imported', 'ok');
+    
+    bands = filters.slice(0, MAX_BANDS).map(f => ({ ...f, id: nextBandId++, enabled: true })); 
+    selectedBandId = bands.length ? bands[0].id : null;
+    
+    if (preamp !== 0) preampDb = preamp; 
+    syncEQ(); 
+    
+    showMsg(`✓ ${Math.min(filters.length, MAX_BANDS)} bands applied`, 'ok'); 
     return true;
   }
 
-  // ── Library ───────────────────────────────────────────────────
-  function loadLibrary() {
-    const libEl = document.getElementById('library');
-    if (sessionTracks.length === 0) {
-      libEl.innerHTML = `<div id="lib-status">
-        No music sources yet.<br>
-        <span style="font-size:11px;color:var(--muted)">Click <strong style="color:var(--text)">+ Sources</strong> above to add a folder.</span>
-      </div>`;
-    } else {
-      mergeSessionIntoLibrary();
-    }
-  }
-
-  function renderLibraryMixed(sessionFiles) {
-    const libEl = document.getElementById('library');
-    if (!sessionFiles.length) {
-      libEl.innerHTML = '<div id="lib-status">No tracks found. Add a source above.</div>';
-      return;
-    }
-
-    let html = '';
-    const sessionGroups = {};
-    sessionFiles.forEach(t => {
-      if (!sessionGroups[t.folder]) sessionGroups[t.folder] = [];
-      sessionGroups[t.folder].push(t);
-    });
-    for (const [folder, tracks] of Object.entries(sessionGroups)) {
-      html += `<div class="lib-folder" style="color:var(--accent2)">📂 ${folder}</div>`;
-      for (const t of tracks) {
-        html += `<div class="lib-track" data-path="${t.id}">${t.name}</div>`;
-      }
-    }
-
-    libEl.innerHTML = html;
-    libEl.querySelectorAll('.lib-track').forEach(el => {
-      el.addEventListener('click', () => {
-        const p = el.dataset.path;
-        currentIdx = playlist.indexOf(p);
-        if (currentIdx === -1) { currentIdx = 0; }
-        playTrack(p);
-      });
-    });
-    highlightCurrent();
-  }
-
-  function highlightCurrent() {
-    document.querySelectorAll('.lib-track').forEach(el => {
-      el.classList.toggle('playing', el.dataset.path === (playlist[currentIdx] || ''));
-    });
-  }
-
-  // ─────────────────────────────────────────────────────────────
-  //  SOURCES MANAGEMENT
-  // ─────────────────────────────────────────────────────────────
-
-  const AUDIO_EXTS_RE = /\.(mp3|flac|m4a|wav|aac|ogg|opus|aiff|wma)$/i;
-  let sessionTracks  = [];
-  let sessionCounter = 0;
-  let dirHandles = [];
-
-  const IDB_NAME = 'squiglink-player', IDB_STORE = 'dir-handles', IDB_VER = 1;
-  let idb = null;
-
-  async function openIDB() {
-    if (idb) return idb;
-    return new Promise((res, rej) => {
-      const req = indexedDB.open(IDB_NAME, IDB_VER);
-      req.onupgradeneeded = e => e.target.result.createObjectStore(IDB_STORE, { keyPath: 'name' });
-      req.onsuccess = e => { idb = e.target.result; res(idb); };
-      req.onerror   = e => rej(e.target.error);
-    });
-  }
-
-  async function idbSaveHandle(name, handle) {
-    const db = await openIDB();
-    return new Promise((res, rej) => {
-      const tx = db.transaction(IDB_STORE, 'readwrite');
-      tx.objectStore(IDB_STORE).put({ name, handle });
-      tx.oncomplete = res; tx.onerror = e => rej(e.target.error);
-    });
-  }
-
-  async function idbGetAllHandles() {
-    const db = await openIDB();
-    return new Promise((res, rej) => {
-      const tx  = db.transaction(IDB_STORE, 'readonly');
-      const req = tx.objectStore(IDB_STORE).getAll();
-      req.onsuccess = e => res(e.target.result);
-      req.onerror   = e => rej(e.target.error);
-    });
-  }
-
-  async function idbDeleteHandle(name) {
-    const db = await openIDB();
-    return new Promise((res, rej) => {
-      const tx = db.transaction(IDB_STORE, 'readwrite');
-      tx.objectStore(IDB_STORE).delete(name);
-      tx.oncomplete = res; tx.onerror = e => rej(e.target.error);
-    });
-  }
-
-  async function loadHandleIntoSession(handle, savedName) {
-    const folderName = savedName || handle.name;
-    sessionTracks = sessionTracks.filter(t => t.dirName !== folderName);
-
-    const files = [];
-    async function walk(dirHandle, path) {
-      try {
-        for await (const entry of dirHandle.values()) {
-          if (entry.kind === 'file' && AUDIO_EXTS_RE.test(entry.name)) {
-            const file = await entry.getFile();
-            Object.defineProperty(file, 'webkitRelativePath', { value: path + entry.name, configurable: true });
-            files.push({ file, path });
-          } else if (entry.kind === 'directory') {
-            await walk(entry, path + entry.name + '/');
-          }
-        }
-      } catch(e) {
-        console.warn("Could not walk specific directory entry", e);
-      }
-    }
-    await walk(handle, '');
-
-    files.forEach(({ file, path }) => {
-      const id     = 'session:' + (sessionCounter++);
-      const folder = path ? folderName + ' / ' + path.slice(0, -1) : folderName;
-      const blob   = URL.createObjectURL(file);
-      sessionTracks.push({ id, name: file.name.replace(/\.[^.]+$/, ''), folder, blobUrl: blob, file, dirName: folderName });
-    });
-
-    return files.length;
-  }
-
-  async function restorePersistedHandles() {
-    let saved;
-    try { saved = await idbGetAllHandles(); }
-    catch (e) { return; }
-    if (!saved.length) return;
-
-    for (const { name, handle } of saved) {
-      try {
-        let perm = await handle.queryPermission({ mode: 'read' });
-        if (perm === 'granted') {
-          dirHandles.push({ handle, name });
-          await loadHandleIntoSession(handle, name);
-        } else {
-          dirHandles.push({ handle, name, needsGrant: true });
-        }
-      } catch(err) {
-        console.warn("Failed checking permission on a saved handle", err);
-      }
-    }
-
-    mergeSessionIntoLibrary();
-    renderSavedHandlesBanner();
-  }
-
-  function renderSavedHandlesBanner() {
-    const needs = dirHandles.filter(d => d.needsGrant);
-    const libEl = document.getElementById('library');
-    const existing = document.getElementById('regrant-banner');
-    if (existing) existing.remove();
-    if (!needs.length) return;
-
-    const banner = document.createElement('div');
-    banner.id = 'regrant-banner';
-    banner.style.cssText = 'padding:10px 12px;background:rgba(124,106,247,0.12);border-bottom:1px solid rgba(124,106,247,0.25);font-size:11px;color:var(--accent2);cursor:pointer;';
-    banner.innerHTML = `🔐 Click to restore <strong>${needs.length}</strong> saved folder${needs.length>1?'s':''} (browser needs permission)`;
-    banner.addEventListener('click', async () => {
-      for (const d of needs) {
-        try {
-          const perm = await d.handle.requestPermission({ mode: 'read' });
-          if (perm === 'granted') {
-            d.needsGrant = false;
-            await loadHandleIntoSession(d.handle, d.name);
-          }
-        } catch(e) { console.warn("Permission denied for folder", e); }
-      }
-      mergeSessionIntoLibrary();
-      renderSavedHandlesBanner();
-      loadSources();
-    });
-    libEl.parentElement.insertBefore(banner, libEl);
-  }
-
-  function addSessionFiles(fileList) {
-    const files = Array.from(fileList).filter(f => AUDIO_EXTS_RE.test(f.name));
-    if (!files.length) { setSourceMsg('No audio files found in selection.', 'error'); return 0; }
-
-    files.forEach(file => {
-      const id     = 'session:' + (sessionCounter++);
-      const folder = (file.webkitRelativePath
-        ? file.webkitRelativePath.split('/').slice(0, -1).join(' / ')
-        : 'Session') || 'Session';
-      const blob   = URL.createObjectURL(file);
-      sessionTracks.push({ id, name: file.name.replace(/\.[^.]+$/, ''), folder, blobUrl: blob, file });
-    });
-
-    mergeSessionIntoLibrary();
-    return files.length;
-  }
-
-  function mergeSessionIntoLibrary() {
-    playlist = sessionTracks.map(t => t.id);
-    renderLibraryMixed(sessionTracks);
-  }
-
-  // ── Modal tab switching ───────────────────────────────────────
-  const sourcesOverlay = document.getElementById('sources-overlay');
-
-  document.querySelectorAll('.src-tab').forEach(tab => {
-    tab.addEventListener('click', () => {
-      document.querySelectorAll('.src-tab').forEach(t => t.classList.toggle('active', t === tab));
-      document.querySelectorAll('.src-pane').forEach(p => p.classList.toggle('visible', p.id === tab.dataset.pane));
-      if (tab.dataset.pane === 'pane-current') loadSources();
-    });
-  });
-
-  document.getElementById('btn-manage-sources').addEventListener('click', () => {
-    sourcesOverlay.classList.add('open');
-    loadSources();
-  });
-  document.getElementById('btn-sources-close').addEventListener('click', () => sourcesOverlay.classList.remove('open'));
-  sourcesOverlay.addEventListener('click', e => { if (e.target === sourcesOverlay) sourcesOverlay.classList.remove('open'); });
-
-  const dropZone     = document.getElementById('drop-zone');
-  const folderPicker = document.getElementById('folder-picker');
-  const dropProgress = document.getElementById('drop-progress');
-  
-  // Checking for secure context to ensure the API is fully available
-  const hasFSAPI     = window.isSecureContext && typeof window.showDirectoryPicker === 'function';
-
-  // Dynamic warning text depending on environment
-  if (hasFSAPI) {
-    // CRITICAL FIX: Hide the fallback input so the persistent API can actually be clicked!
-    folderPicker.style.display = 'none'; 
-    dropZone.querySelector('.drop-sub').innerHTML =
-      'Folder is <strong>remembered across sessions</strong> (Chrome/Edge/Safari).<br>' +
-      '<span style="color:var(--muted)">Firefox: drag-and-drop works but won\'t persist.</span>';
-  } else {
-    dropZone.querySelector('.drop-sub').innerHTML =
-      '<span style="color:var(--danger)">⚠ Automatic saving is disabled in this environment.</span><br>' +
-      '<span style="color:var(--muted)">To enable persistence, host this app on the web (HTTPS) or a local server. Opening the raw file directly blocks saving.</span>';
-  }
-
-  dropZone.addEventListener('click', async e => {
-    if (e.target === folderPicker) return;
-    if (hasFSAPI) {
-      try {
-        const handle = await window.showDirectoryPicker({ mode: 'read' });
-        dropProgress.textContent = 'Scanning…';
-        const n = await loadHandleIntoSession(handle, handle.name);
-        if (!dirHandles.find(d => d.name === handle.name)) {
-          dirHandles.push({ handle, name: handle.name });
-          await idbSaveHandle(handle.name, handle);
-        }
-        mergeSessionIntoLibrary();
-        dropProgress.textContent = `✓ ${n} tracks — remembered for next time`;
-        setSourceMsg(`✓ ${n} tracks from "${handle.name}" saved permanently`, 'ok');
-        setTimeout(() => sourcesOverlay.classList.remove('open'), 1400);
-      } catch (err) {
-        if (err.name !== 'AbortError') setSourceMsg('Error: ' + err.message, 'error');
-      }
-    } else {
-      folderPicker.click();
-    }
-  });
-
-  folderPicker.addEventListener('change', () => {
-    const n = addSessionFiles(folderPicker.files);
-    if (n) {
-      dropProgress.textContent = `✓ ${n} tracks loaded (session only)`;
-      setSourceMsg(`✓ ${n} tracks added for this session`, 'ok');
-      setTimeout(() => sourcesOverlay.classList.remove('open'), 1200);
-    }
-  });
-
-  dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
-  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
-  dropZone.addEventListener('drop', async e => {
-    e.preventDefault();
-    dropZone.classList.remove('dragover');
-    const items = e.dataTransfer.items;
-    
-    // Attempt persistent extraction via drag and drop if supported
-    if (items && items.length && hasFSAPI) {
-      for (const item of items) {
-        if (item.getAsFileSystemHandle) {
-          try {
-            const handle = await item.getAsFileSystemHandle();
-            if (handle && handle.kind === 'directory') {
-               dropProgress.textContent = 'Scanning…';
-               const n = await loadHandleIntoSession(handle, handle.name);
-               if (!dirHandles.find(d => d.name === handle.name)) {
-                 dirHandles.push({ handle, name: handle.name });
-                 await idbSaveHandle(handle.name, handle);
-               }
-               mergeSessionIntoLibrary();
-               dropProgress.textContent = `✓ ${n} tracks — remembered for next time`;
-               setSourceMsg(`✓ ${n} tracks from "${handle.name}" saved permanently`, 'ok');
-               setTimeout(() => sourcesOverlay.classList.remove('open'), 1400);
-               return; 
-            }
-          } catch (err) {
-            console.warn("Could not extract FS handle, falling back to temp file reader", err);
-          }
-        }
-      }
-    }
-
-    // Fallback: temporary parsing (won't persist to IDB)
-    const allFiles2 = [];
-    let pending = 0;
-
-    function scanEntry(entry, path) {
-      path = path || '';
-      if (entry.isFile) {
-        pending++;
-        entry.getFile(file => {
-          if (AUDIO_EXTS_RE.test(file.name)) {
-            Object.defineProperty(file, 'webkitRelativePath', { value: path + file.name });
-            allFiles2.push(file);
-          }
-          pending--;
-          if (pending === 0) finish();
-        });
-      } else if (entry.isDirectory) {
-        const reader = entry.createReader();
-        const readAll = () => reader.readEntries(entries => {
-          if (!entries.length) return;
-          entries.forEach(e2 => scanEntry(e2, path + entry.name + '/'));
-          readAll();
-        });
-        readAll();
-      }
-    }
-
-    if (items && items.length) {
-      for (const item of items) {
-        const entry = item.webkitGetAsEntry ? item.webkitGetAsEntry() : null;
-        if (entry) scanEntry(entry);
-        else if (item.kind === 'file') allFiles2.push(item.getAsFile());
-      }
-      if (pending === 0) finish();
-    }
-
-    function finish() {
-      if (!allFiles2.length) { dropProgress.textContent = 'No audio files found.'; return; }
-      const dt = new DataTransfer();
-      allFiles2.forEach(f => dt.items.add(f));
-      const n = addSessionFiles(dt.files);
-      if (n) {
-        dropProgress.textContent = `✓ ${n} tracks loaded`;
-        setSourceMsg(`✓ ${n} tracks added for this session`, 'ok');
-        setTimeout(() => sourcesOverlay.classList.remove('open'), 1200);
-      }
-    }
-  });
-
-  function loadSources() {
-    renderSources();
-  }
-
-  function renderSources() {
-    const listEl = document.getElementById('sources-list');
-    let html = '';
-
-    dirHandles.forEach(d => {
-      const count = sessionTracks.filter(t => t.dirName === d.name).length;
-      const status = d.needsGrant ? '🔐 needs permission click' : count + ' tracks';
-      html += `<div class="source-row session">
-        <div class="source-icon">📂</div>
-        <div class="source-info">
-          <div class="source-path">${d.name}</div>
-          <div class="source-count">${status}</div>
-        </div>
-        <button class="source-remove source-remove-idb" data-name="${d.name}" title="Forget folder">✕</button>
-      </div>`;
-    });
-
-    if (!html) {
-      listEl.innerHTML = '<div class="source-empty">No sources yet. Add one in the Pick/Drop tab.</div>';
-      return;
-    }
-    listEl.innerHTML = html;
-
-    listEl.querySelectorAll('.source-remove-idb').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        const name = btn.dataset.name;
-        sessionTracks.filter(t => t.dirName === name).forEach(t => URL.revokeObjectURL(t.blobUrl));
-        sessionTracks = sessionTracks.filter(t => t.dirName !== name);
-        dirHandles = dirHandles.filter(d => d.name !== name);
-        await idbDeleteHandle(name);
-        mergeSessionIntoLibrary();
-        renderSavedHandlesBanner();
-        loadSources();
-        setSourceMsg(`"${name}" removed.`, 'ok');
-      });
-    });
-  }
-
-  function setSourceMsg(text, type) {
-    const el = document.getElementById('source-msg');
-    el.textContent = text; el.className = type || '';
-    if (text) setTimeout(() => { if (el.textContent === text) { el.textContent = ''; el.className = ''; } }, 4000);
-  }
-
-  // ── Playback ──────────────────────────────────────────────────
-  function playTrack(path) {
-    ensureCtx();
-    if (audioCtx.state === 'suspended') audioCtx.resume();
-
-    const session = sessionTracks.find(t => t.id === path);
-    if (session) {
-      audioEl.src = session.blobUrl;
-      document.getElementById('np-title').textContent = session.name;
-      document.getElementById('np-folder').textContent = '⚡ ' + session.folder;
-      audioEl.play();
-      document.getElementById('btn-play').textContent = '⏸';
-      rebuildEQChain();
-      highlightCurrent();
-    }
-  }
-
-  function togglePlay() {
-    ensureCtx();
-    if (audioCtx.state === 'suspended') audioCtx.resume();
-    if (audioEl.paused) {
-      if (!audioEl.src) { if (playlist.length) { currentIdx = 0; playTrack(playlist[0]); } return; }
-      audioEl.play();
-      document.getElementById('btn-play').textContent = '⏸';
-    } else {
-      audioEl.pause();
-      document.getElementById('btn-play').textContent = '▶';
-    }
-  }
-
-  function playNext() {
-    if (playlist.length === 0) return;
-    if (repeatMode === 2) { audioEl.currentTime = 0; audioEl.play(); return; }
-    let next;
-    if (shuffle) {
-      next = Math.floor(Math.random() * playlist.length);
-    } else {
-      next = (currentIdx + 1) % playlist.length;
-    }
-    currentIdx = next;
-    playTrack(playlist[currentIdx]);
-  }
-
-  function playPrev() {
-    if (playlist.length === 0) return;
-    if (audioEl.currentTime > 3) { audioEl.currentTime = 0; return; }
-    currentIdx = (currentIdx - 1 + playlist.length) % playlist.length;
-    playTrack(playlist[currentIdx]);
-  }
-
-  function fmt(s) {
-    s = Math.floor(s || 0);
-    return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
-  }
-
-  audioEl.addEventListener('timeupdate', () => {
-    const pct = audioEl.duration ? (audioEl.currentTime / audioEl.duration * 100) : 0;
-    document.getElementById('progress-bar-fill').style.width = pct + '%';
-    document.getElementById('time-cur').textContent = fmt(audioEl.currentTime);
-    document.getElementById('time-tot').textContent = fmt(audioEl.duration);
-  });
-
-  audioEl.addEventListener('ended', () => {
-    if (repeatMode === 2) { audioEl.play(); return; }
-    if (repeatMode === 1 || currentIdx < playlist.length - 1 || shuffle) {
-      playNext();
-    } else {
-      document.getElementById('btn-play').textContent = '▶';
-    }
-  });
-
-  audioEl.addEventListener('play',  () => { document.getElementById('btn-play').textContent = '⏸'; });
-  audioEl.addEventListener('pause', () => { document.getElementById('btn-play').textContent = '▶'; });
-
-  document.getElementById('progress-bar-outer').addEventListener('click', e => {
-    if (!audioEl.duration) return;
-    const rect = e.currentTarget.getBoundingClientRect();
-    audioEl.currentTime = ((e.clientX - rect.left) / rect.width) * audioEl.duration;
-  });
-
-  document.getElementById('vol-slider').addEventListener('input', e => {
-    if (makeupNode) makeupNode.gain.value = parseFloat(e.target.value);
-    else audioEl.volume = Math.min(1, e.target.value);
-  });
-
-  document.getElementById('btn-play').addEventListener('click', togglePlay);
-  document.getElementById('btn-prev').addEventListener('click', playPrev);
-  document.getElementById('btn-next').addEventListener('click', playNext);
-
-  document.getElementById('btn-shuffle').addEventListener('click', function() {
-    shuffle = !shuffle;
-    this.classList.toggle('active', shuffle);
-  });
-
-  document.getElementById('btn-repeat').addEventListener('click', function() {
-    repeatMode = (repeatMode + 1) % 3;
-    this.classList.toggle('active', repeatMode > 0);
-    this.textContent = repeatMode === 2 ? '↻¹' : '↻';
-  });
-
-  document.getElementById('search').addEventListener('input', function() {
-    const q = this.value.toLowerCase().trim();
-    const filtered = q ? sessionTracks.filter(f => f.name.toLowerCase().includes(q)) : sessionTracks;
-    renderLibraryMixed(filtered);
-  });
-
-  // ─────────────────────────────────────────────────────────────
-  //  TABLE VIEW
-  // ─────────────────────────────────────────────────────────────
-  function renderTable() {
-    const tbody = document.getElementById('peq-tbody');
-    if (!tbody) return;
-    tbody.innerHTML = '';
-    bands.forEach(band => {
-      const tr = document.createElement('tr');
-      tr.className = 'peq-row' + (band.id === selectedBandId ? ' selected-row' : '');
-      tr.dataset.id = band.id;
-      tbody.appendChild(tr);
-      _buildTableRow(tr, band);
-    });
-  }
-
-  function _buildTableRow(tr, band) {
-    const gainCls = band.gain > 0.05 ? 'gain-pos' : band.gain < -0.05 ? 'gain-neg' : '';
-    tr.innerHTML = `
-      <td><input type="checkbox" class="tbl-enabled" ${band.enabled ? 'checked' : ''} data-id="${band.id}"></td>
-      <td>
-        <select class="tbl-type" data-id="${band.id}">
-          <option value="PK"  ${band.type==='PK' ?'selected':''}>PK</option>
-          <option value="LSQ" ${band.type==='LSQ'?'selected':''}>LSQ</option>
-          <option value="HSQ" ${band.type==='HSQ'?'selected':''}>HSQ</option>
-        </select>
-      </td>
-      <td><input class="tbl-input" type="number" step="1"    min="20"   max="20000" data-field="freq" data-id="${band.id}" value="${Math.round(band.freq)}"></td>
-      <td><input class="tbl-input ${gainCls}"   type="number" step="0.1" min="-20" max="20"    data-field="gain" data-id="${band.id}" value="${band.gain.toFixed(1)}"></td>
-      <td><input class="tbl-input" type="number" step="0.01"  min="0.1"  max="10"   data-field="q"    data-id="${band.id}" value="${band.q.toFixed(2)}"></td>
-      <td><button class="tbl-del" data-id="${band.id}" title="Remove">✕</button></td>`;
-
-    tr.addEventListener('mousedown', e => {
-      if (e.target.tagName === 'BUTTON' || e.target.tagName === 'SELECT') return;
-      selectedBandId = band.id;
-      document.querySelectorAll('.peq-row').forEach(r =>
-        r.classList.toggle('selected-row', parseInt(r.dataset.id) === selectedBandId));
-      drawCurve(); renderBandStrip();
-    });
-
-    tr.querySelectorAll('.tbl-input').forEach(inp => {
-      let lastVal = inp.value;
-      const commit = () => {
-        if (inp.value === lastVal) return; 
-        lastVal = inp.value;
-        const b = bands.find(x => x.id === parseInt(inp.dataset.id));
-        if (!b) return;
-        let val = parseFloat(inp.value);
-        if (isNaN(val)) { inp.value = lastVal; return; }
-        const field = inp.dataset.field;
-        if (field === 'freq') val = Math.max(20, Math.min(20000, Math.round(val)));
-        if (field === 'gain') val = Math.max(-20, Math.min(20, Math.round(val * 10) / 10));
-        if (field === 'q')    val = Math.max(0.1, Math.min(10,  Math.round(val * 100) / 100));
-        b[field] = val;
-        selectedBandId = b.id;
-        if (field === 'gain') {
-          inp.className = 'tbl-input ' + (val > 0.05 ? 'gain-pos' : val < -0.05 ? 'gain-neg' : '');
-        }
-        activeFilters = bands.filter(bx => bx.enabled);
-        preampDb = computeAutoPreamp();
-        document.getElementById('preamp-val').textContent = preampDb.toFixed(1) + ' dB';
-        rebuildEQChain();
-        drawCurve();
-        renderBandStrip();
-        updateSimpleSliders();
-      };
-      inp.addEventListener('input',  commit);
-      inp.addEventListener('change', commit);
-      inp.addEventListener('keydown', e => { if (e.key === 'Enter') { inp.blur(); } });
-    });
-
-    tr.querySelector('.tbl-type').addEventListener('change', e => {
-      const b = bands.find(x => x.id === parseInt(e.target.dataset.id));
-      if (b) { b.type = e.target.value; selectedBandId = b.id; syncEQ(); }
-    });
-
-    tr.querySelector('.tbl-enabled').addEventListener('change', e => {
-      const b = bands.find(x => x.id === parseInt(e.target.dataset.id));
-      if (b) { b.enabled = e.target.checked; syncEQ(); }
-    });
-
-    tr.querySelector('.tbl-del').addEventListener('click', () => {
-      bands = bands.filter(x => x.id !== band.id);
-      if (selectedBandId === band.id) selectedBandId = bands.length ? bands[bands.length-1].id : null;
-      syncEQ();
-      tr.remove(); 
-    });
-  }
-
-  function updateTableValues() {
-    const tbody = document.getElementById('peq-tbody');
-    if (!tbody) return;
-    const rows = tbody.querySelectorAll('tr.peq-row');
-    if (rows.length !== bands.length) { renderTable(); return; }
-    rows.forEach((tr, i) => {
-      const band = bands[i];
-      if (!band || parseInt(tr.dataset.id) !== band.id) { renderTable(); return; }
-      tr.classList.toggle('selected-row', band.id === selectedBandId);
-      tr.querySelectorAll('.tbl-input').forEach(inp => {
-        if (document.activeElement === inp) return;
-        const field = inp.dataset.field;
-        const newVal = field === 'freq' ? String(Math.round(band.freq))
-                     : field === 'gain' ? band.gain.toFixed(1)
-                     : band.q.toFixed(2);
-        if (inp.value !== newVal) inp.value = newVal;
-        if (field === 'gain') {
-          inp.className = 'tbl-input ' + (band.gain > 0.05 ? 'gain-pos' : band.gain < -0.05 ? 'gain-neg' : '');
-        }
-      });
-      const sel = tr.querySelector('.tbl-type');
-      if (sel && sel.value !== band.type) sel.value = band.type;
-      const cb = tr.querySelector('.tbl-enabled');
-      if (cb && cb.checked !== band.enabled) cb.checked = band.enabled;
-    });
-  }
-
-  function updateSimpleSliders() {
-    SIMPLE_BANDS.forEach(def => {
-      const slider = document.getElementById('ss-' + def.id);
-      const valEl  = document.getElementById('sv-' + def.id);
-      if (!slider || !valEl) return;
-      const b = getSimpleBand(def.id);
-      const gain = b ? b.gain : 0;
-      if (parseFloat(slider.value) !== gain) slider.value = gain;
-      valEl.textContent = (gain >= 0 ? '+' : '') + gain.toFixed(1) + ' dB';
-      valEl.className = 'simple-slider-val' + (gain > 0 ? ' pos' : gain < 0 ? ' neg' : '');
-    });
-  }
-
-  document.getElementById('btn-tbl-add').addEventListener('click', () => {
-    addBand({ freq: 1000, gain: 0, q: 1.0, type: 'PK' });
-  });
-
-  // ─────────────────────────────────────────────────────────────
-  //  SIMPLE / SLIDER EQ
-  // ─────────────────────────────────────────────────────────────
-  const SIMPLE_BANDS = [
-    { id: 'subbass',  label: 'Sub Bass',  freq:  50, q: 0.7, type: 'PK'  },
-    { id: 'bass',     label: 'Bass',      freq: 120, q: 1.0, type: 'PK'  },
-    { id: 'warmth',   label: 'Warmth',    freq: 250, q: 1.0, type: 'PK'  },
-    { id: 'mids',     label: 'Mids',      freq: 900, q: 0.8, type: 'PK'  },
-    { id: 'presence', label: 'Presence',  freq:4000, q: 1.2, type: 'PK'  },
-    { id: 'treble',   label: 'Treble',    freq:9000, q: 1.0, type: 'PK'  },
-    { id: 'air',      label: 'Air',       freq:15000,q: 1.0, type: 'HSQ' },
-  ];
-
-  function getSimpleBand(sid) {
-    return bands.find(b => b.__simpleId === sid);
-  }
-  function ensureSimpleBand(sid) {
-    let b = getSimpleBand(sid);
-    if (!b) {
-      const def = SIMPLE_BANDS.find(s => s.id === sid);
-      b = { id: nextBandId++, type: def.type, freq: def.freq, gain: 0, q: def.q, enabled: true, __simpleId: sid };
-      bands.push(b);
-    }
-    return b;
-  }
-
-  SIMPLE_BANDS.forEach(def => {
-    const slider = document.getElementById('ss-' + def.id);
-    const valEl  = document.getElementById('sv-' + def.id);
-    if (!slider || !valEl) return;
-
-    slider.addEventListener('input', () => {
-      const gain = parseFloat(slider.value);
-      valEl.textContent = (gain >= 0 ? '+' : '') + gain.toFixed(1) + ' dB';
-      valEl.className = 'simple-slider-val' + (gain > 0 ? ' pos' : gain < 0 ? ' neg' : '');
-
-      if (gain === 0) {
-        const b = getSimpleBand(def.id);
-        if (b) { bands = bands.filter(x => x !== b); }
-      } else {
-        const b = ensureSimpleBand(def.id);
-        b.gain = gain;
-      }
-      syncEQ();
-    });
-  });
-
-  document.getElementById('btn-simple-reset').addEventListener('click', () => {
-    SIMPLE_BANDS.forEach(def => {
-      const slider = document.getElementById('ss-' + def.id);
-      const valEl  = document.getElementById('sv-' + def.id);
-      if (slider) slider.value = 0;
-      if (valEl)  { valEl.textContent = '0.0 dB'; valEl.className = 'simple-slider-val'; }
-      bands = bands.filter(b => !b.__simpleId);
-    });
-    syncEQ();
-  });
-
-  // ─────────────────────────────────────────────────────────────
-  //  VIEW TABS
-  // ─────────────────────────────────────────────────────────────
-  let currentView = 'graph';
+  // ── UI Views & Toggles ─────────────────────────────────────────
   document.querySelectorAll('.view-tab').forEach(tab => {
-    tab.addEventListener('click', () => {
-      currentView = tab.dataset.view;
-      document.querySelectorAll('.view-tab').forEach(t => t.classList.toggle('active', t === tab));
-      document.querySelectorAll('.eq-view').forEach(v => {
-        v.classList.toggle('visible', v.id === 'view-' + currentView);
-      });
-      if (currentView === 'graph') { setTimeout(resizeCanvas, 10); }
-      if (currentView === 'table') { renderTable(); }
+    tab.addEventListener('click', () => { 
+      document.querySelectorAll('.view-tab').forEach(t => t.classList.toggle('active', t === tab)); 
+      document.querySelectorAll('.eq-view').forEach(v => v.classList.toggle('visible', v.id === 'view-' + tab.dataset.view)); 
+      if (tab.dataset.view === 'graph') {
+        setTimeout(resizeCanvas, 10); 
+      }
+      if (tab.dataset.view === 'table') {
+        renderTable(); 
+      }
     });
   });
 
   const eqPill = document.getElementById('eq-pill');
   const eqCheckbox = document.getElementById('eq-enabled');
-  eqPill.addEventListener('click', () => {
-    eqEnabled = !eqEnabled;
-    eqCheckbox.checked = eqEnabled;
-    eqPill.classList.toggle('on', eqEnabled);
-    document.getElementById('eq-pill-label').textContent = eqEnabled ? 'ON' : 'OFF';
-    rebuildEQChain();
-    drawCurve();
+  
+  eqPill.addEventListener('click', () => { 
+    eqEnabled = !eqEnabled; 
+    eqCheckbox.checked = eqEnabled; 
+    eqPill.classList.toggle('on', eqEnabled); 
+    document.getElementById('eq-pill-label').textContent = eqEnabled ? 'ON' : 'OFF'; 
+    updateAudioGraph(); 
+    drawCurve(); 
   });
-
+  
   document.getElementById('btn-add-band').addEventListener('click', () => {
     addBand({ freq: 1000, gain: 0, q: 1.0, type: 'PK' });
   });
 
-  document.getElementById('btn-clear-eq').addEventListener('click', () => {
-    bands = []; selectedBandId = null; activeFilters = []; preampDb = 0;
-    document.getElementById('preamp-val').textContent = '0.0 dB';
-    SIMPLE_BANDS.forEach(def => {
-      const s = document.getElementById('ss-' + def.id);
-      const v = document.getElementById('sv-' + def.id);
-      if (s) s.value = 0;
-      if (v) { v.textContent = '0.0 dB'; v.className = 'simple-slider-val'; }
-    });
-    rebuildEQChain(); drawCurve(); renderBandStrip(); renderTable();
-    showMsg('EQ cleared.', '');
+  // RESTORED: Table View Add Band Button
+  document.getElementById('btn-tbl-add').addEventListener('click', () => {
+    addBand({ freq: 1000, gain: 0, q: 1.0, type: 'PK' });
+  });
+  
+  document.getElementById('btn-clear-eq').addEventListener('click', () => { 
+    bands = []; 
+    selectedBandId = null; 
+    activeFilters = []; 
+    preampDb = 0; 
+    tubeDrive = 0; 
+    
+    document.getElementById('preamp-val').textContent = '0.0 dB'; 
+    document.getElementById('ss-tube').value = 0; 
+    document.getElementById('sv-tube').textContent = '0%'; 
+    
+    document.querySelectorAll('.simple-slider-val').forEach(el => el.textContent = '0.0 dB'); 
+    document.querySelectorAll('.simple-slider').forEach(el => {
+      el.value = 0; 
+      el.style.background = 'var(--bg4)';
+    }); 
+    
+    syncEQ(); 
+    showMsg('EQ cleared.', ''); 
   });
 
   const importOverlay = document.getElementById('import-overlay');
-  document.getElementById('btn-import').addEventListener('click', () => {
-    importOverlay.classList.add('open');
-    document.getElementById('iem-input').focus();
-  });
+  
+  document.getElementById('btn-import').addEventListener('click', () => { 
+    importOverlay.classList.add('open'); 
+    document.getElementById('iem-input').focus(); 
+  }); 
+  
   document.getElementById('btn-import-cancel').addEventListener('click', () => {
     importOverlay.classList.remove('open');
+  }); 
+  
+  importOverlay.addEventListener('click', e => { 
+    if (e.target === importOverlay) importOverlay.classList.remove('open'); 
   });
-  importOverlay.addEventListener('click', e => {
-    if (e.target === importOverlay) importOverlay.classList.remove('open');
+  
+  document.getElementById('btn-import-apply').addEventListener('click', () => { 
+    if (importFilters(document.getElementById('iem-input').value.trim())) {
+      importOverlay.classList.remove('open'); 
+    }
   });
-  document.getElementById('btn-import-apply').addEventListener('click', () => {
-    const text = document.getElementById('iem-input').value.trim();
-    if (importFilters(text)) { importOverlay.classList.remove('open'); }
-  });
-
-  function showMsg(text, type) {
-    const el = document.getElementById('msg');
-    el.textContent = text;
-    el.className = type || '';
-    if (text) setTimeout(() => { if (el.textContent === text) el.textContent = ''; }, 3000);
+  
+  function showMsg(text, type) { 
+    const el = document.getElementById('msg'); 
+    el.textContent = text; 
+    el.className = type || ''; 
+    if (text) {
+      setTimeout(() => { 
+        if (el.textContent === text) el.textContent = ''; 
+      }, 3000); 
+    }
   }
 
-  document.addEventListener('keydown', e => {
-    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
-    if (e.code === 'Space') { e.preventDefault(); togglePlay(); }
-    if (e.code === 'ArrowRight') { audioEl.currentTime = Math.min(audioEl.duration || 0, audioEl.currentTime + 10); }
-    if (e.code === 'ArrowLeft')  { audioEl.currentTime = Math.max(0, audioEl.currentTime - 10); }
-    if (e.code === 'ArrowUp')    { const s = document.getElementById('vol-slider'); s.value = Math.min(1.5, parseFloat(s.value) + 0.05); if (makeupNode) makeupNode.gain.value = parseFloat(s.value); }
-    if (e.code === 'ArrowDown')  { const s = document.getElementById('vol-slider'); s.value = Math.max(0, parseFloat(s.value) - 0.05); if (makeupNode) makeupNode.gain.value = parseFloat(s.value); }
-    if ((e.code === 'Backspace' || e.code === 'Delete') && selectedBandId !== null) {
-      bands = bands.filter(b => b.id !== selectedBandId);
-      selectedBandId = bands.length ? bands[bands.length-1].id : null;
+  // ── AutoEQ Target Matcher ──────────────────────────────────────
+  const targetOverlay = document.getElementById('target-overlay');
+  const targetSearch = document.getElementById('target-search');
+  const targetResults = document.getElementById('autoeq-results');
+  const targetStatus = document.getElementById('autoeq-status'); 
+  let autoEqDatabase = [];
+
+  document.getElementById('btn-target-match').addEventListener('click', async () => { 
+    targetOverlay.classList.add('open'); 
+    targetSearch.focus(); 
+    if (autoEqDatabase.length === 0) await fetchAutoEqDatabase(); 
+  }); 
+  
+  document.getElementById('btn-target-cancel').addEventListener('click', () => {
+    targetOverlay.classList.remove('open');
+  }); 
+  
+  targetOverlay.addEventListener('click', e => { 
+    if (e.target === targetOverlay) targetOverlay.classList.remove('open'); 
+  });
+
+  async function fetchAutoEqDatabase() {
+    targetStatus.textContent = "Syncing AutoEQ Database from GitHub...";
+    try { 
+      const res = await fetch('https://api.github.com/repos/jaakkopasanen/AutoEq/git/trees/master?recursive=1'); 
+      if (!res.ok) throw new Error("API limit"); 
+      const data = await res.json(); 
+      
+      autoEqDatabase = data.tree.filter(f => f.path.startsWith('results/') && f.path.endsWith('ParametricEQ.txt')).map(f => { 
+        const parts = f.path.split('/'); 
+        return { 
+          name: parts[parts.length - 1].replace(' ParametricEQ.txt', ''), 
+          reviewer: parts[1], 
+          target: parts[2], 
+          path: f.path 
+        }; 
+      }); 
+      
+      targetStatus.textContent = `✓ Synced ${autoEqDatabase.length} headphone profiles.`; 
+      renderAutoEqResults(autoEqDatabase.slice(0, 50)); 
+    } catch(err) { 
+      targetStatus.textContent = "Offline Fallback (GitHub limit reached)."; 
+      autoEqDatabase = [
+        { 
+          name: "Sennheiser HD 600", 
+          target: "harman", 
+          reviewer: "oratory1990", 
+          path: "results/oratory1990/harman_over-ear_2018/Sennheiser HD 600/Sennheiser HD 600 ParametricEQ.txt" 
+        }, 
+        { 
+          name: "Moondrop Blessing 2", 
+          target: "harman", 
+          reviewer: "crinacle", 
+          path: "results/crinacle/harman_in-ear_2019v2/Moondrop Blessing 2/Moondrop Blessing 2 ParametricEQ.txt" 
+        }
+      ]; 
+      renderAutoEqResults(autoEqDatabase); 
+    }
+  }
+
+  targetSearch.addEventListener('input', e => { 
+    const q = e.target.value.toLowerCase().trim(); 
+    if (q) {
+      let filtered = autoEqDatabase.filter(i => i.name.toLowerCase().includes(q) || i.reviewer.toLowerCase().includes(q));
+      renderAutoEqResults(filtered.slice(0, 50)); 
+    } else {
+      renderAutoEqResults(autoEqDatabase.slice(0, 50));
+    }
+  });
+
+  function renderAutoEqResults(results) {
+    targetResults.innerHTML = ''; 
+    if (!results.length) { 
+      targetResults.innerHTML = '<div style="padding:10px; color:var(--muted); font-size:12px;">No matches found.</div>'; 
+      return; 
+    }
+    
+    results.forEach(item => { 
+      const div = document.createElement('div'); 
+      div.className = 'aeq-item'; 
+      div.innerHTML = `
+        <div class="aeq-name">${item.name}</div>
+        <div class="aeq-meta">Target: ${item.target} • Source: ${item.reviewer}</div>
+      `; 
+      
+      div.addEventListener('click', async () => { 
+        targetStatus.textContent = `Fetching profile...`; 
+        try { 
+          const res = await fetch(`https://raw.githubusercontent.com/jaakkopasanen/AutoEq/master/${item.path}`); 
+          if(!res.ok) throw new Error("404"); 
+          
+          const textData = await res.text();
+          if (importFilters(textData)) { 
+            targetOverlay.classList.remove('open'); 
+            targetSearch.value = ''; 
+          } 
+        } catch(err) { 
+          targetStatus.textContent = "Error fetching raw profile data."; 
+        } 
+      }); 
+      
+      targetResults.appendChild(div); 
+    });
+  }
+
+  // ── Local Files & DB ──────────────────────────────────────────
+  function loadLibrary() { 
+    const libEl = document.getElementById('library'); 
+    if (sessionTracks.length === 0) {
+      libEl.innerHTML = `<div id="lib-status">No music sources yet.</div>`; 
+    } else {
+      mergeSessionIntoLibrary(); 
+    }
+  }
+
+  function renderLibraryMixed(sessionFiles) {
+    const libEl = document.getElementById('library'); 
+    if (!sessionFiles.length) { 
+      libEl.innerHTML = '<div id="lib-status">No tracks found.</div>'; 
+      return; 
+    }
+    
+    let html = ''; 
+    const groups = {}; 
+    
+    sessionFiles.forEach(t => { 
+      if (!groups[t.folder]) {
+        groups[t.folder] = []; 
+      }
+      groups[t.folder].push(t); 
+    });
+    
+    for (const [folder, tracks] of Object.entries(groups)) { 
+      html += `<div class="lib-folder" style="color:var(--accent2)">📂 ${folder}</div>`; 
+      for (const t of tracks) {
+        html += `<div class="lib-track" data-path="${t.id}">${t.name}</div>`; 
+      }
+    }
+    
+    libEl.innerHTML = html; 
+    
+    libEl.querySelectorAll('.lib-track').forEach(el => {
+      el.addEventListener('click', () => { 
+        currentIdx = playlist.indexOf(el.dataset.path); 
+        if (currentIdx === -1) currentIdx = 0; 
+        playTrack(el.dataset.path); 
+      });
+    });
+    
+    highlightCurrent();
+  }
+
+  function highlightCurrent() { 
+    document.querySelectorAll('.lib-track').forEach(el => {
+      el.classList.toggle('playing', el.dataset.path === (playlist[currentIdx] || ''));
+    }); 
+  }
+
+  const AUDIO_EXTS_RE = /\.(mp3|flac|m4a|wav|aac|ogg|opus|aiff|wma)$/i; 
+  let sessionTracks = [];
+  let sessionCounter = 0;
+  let dirHandles = [];
+  const IDB_NAME = 'squiglink-player';
+  const IDB_STORE = 'dir-handles';
+  const IDB_VER = 3; 
+  let idb = null;
+
+  async function openIDB() { 
+    if (idb) return idb; 
+    return new Promise((res, rej) => { 
+      const req = indexedDB.open(IDB_NAME, IDB_VER); 
+      req.onupgradeneeded = e => { 
+        if (!e.target.result.objectStoreNames.contains(IDB_STORE)) {
+          e.target.result.createObjectStore(IDB_STORE, { keyPath: 'name' }); 
+        }
+      }; 
+      req.onsuccess = e => { 
+        idb = e.target.result; 
+        res(idb); 
+      }; 
+      req.onerror = e => rej(e.target.error); 
+    }); 
+  }
+
+  async function idbSaveHandle(name, handle) { 
+    const db = await openIDB(); 
+    return new Promise((res, rej) => { 
+      const tx = db.transaction(IDB_STORE, 'readwrite'); 
+      tx.objectStore(IDB_STORE).put({ name, handle }); 
+      tx.oncomplete = res; 
+      tx.onerror = e => rej(e.target.error); 
+    }); 
+  }
+
+  async function idbGetAllHandles() { 
+    const db = await openIDB(); 
+    return new Promise((res, rej) => { 
+      const tx = db.transaction(IDB_STORE, 'readonly'); 
+      const req = tx.objectStore(IDB_STORE).getAll(); 
+      req.onsuccess = e => res(e.target.result); 
+      req.onerror = e => rej(e.target.error); 
+    }); 
+  }
+
+  async function idbDeleteHandle(name) { 
+    const db = await openIDB(); 
+    return new Promise((res, rej) => { 
+      const tx = db.transaction(IDB_STORE, 'readwrite'); 
+      tx.objectStore(IDB_STORE).delete(name); 
+      tx.oncomplete = res; 
+      tx.onerror = e => rej(e.target.error); 
+    }); 
+  }
+
+  async function loadHandleIntoSession(handle, savedName) {
+    const folderName = savedName || handle.name; 
+    sessionTracks = sessionTracks.filter(t => t.dirName !== folderName); 
+    const files = [];
+    
+    async function walk(dirHandle, path) { 
+      try { 
+        for await (const entry of dirHandle.values()) { 
+          if (entry.kind === 'file' && AUDIO_EXTS_RE.test(entry.name)) { 
+            const file = await entry.getFile(); 
+            Object.defineProperty(file, 'webkitRelativePath', { value: path + entry.name, configurable: true }); 
+            files.push({ file, path }); 
+          } else if (entry.kind === 'directory') {
+            await walk(entry, path + entry.name + '/'); 
+          }
+        } 
+      } catch(e) {
+        console.warn("Could not walk", e);
+      } 
+    }
+    
+    await walk(handle, ''); 
+    
+    files.forEach(({ file, path }) => { 
+      sessionTracks.push({ 
+        id: 'session:' + (sessionCounter++), 
+        name: file.name.replace(/\.[^.]+$/, ''), 
+        folder: path ? folderName + ' / ' + path.slice(0, -1) : folderName, 
+        blobUrl: URL.createObjectURL(file), 
+        file, 
+        dirName: folderName 
+      }); 
+    }); 
+    
+    return files.length;
+  }
+
+  async function restorePersistedHandles() { 
+    let saved; 
+    try { 
+      saved = await idbGetAllHandles(); 
+    } catch (e) { 
+      return; 
+    } 
+    
+    if (!saved || !saved.length) return; 
+    
+    for (const { name, handle } of saved) { 
+      try { 
+        if (await handle.queryPermission({ mode: 'read' }) === 'granted') { 
+          dirHandles.push({ handle, name }); 
+          await loadHandleIntoSession(handle, name); 
+        } else {
+          dirHandles.push({ handle, name, needsGrant: true }); 
+        }
+      } catch(err) {
+        console.warn(err);
+      } 
+    } 
+    mergeSessionIntoLibrary(); 
+    renderSavedHandlesBanner(); 
+  }
+
+  function renderSavedHandlesBanner() {
+    const needs = dirHandles.filter(d => d.needsGrant);
+    const libEl = document.getElementById('library');
+    const existing = document.getElementById('regrant-banner'); 
+    
+    if (existing) existing.remove(); 
+    if (!needs.length) return;
+    
+    const banner = document.createElement('div'); 
+    banner.id = 'regrant-banner'; 
+    banner.style.cssText = 'padding:10px 20px;background:rgba(124,106,247,0.12);border-bottom:1px solid rgba(124,106,247,0.25);font-size:11px;color:var(--accent2);cursor:pointer;'; 
+    banner.innerHTML = `🔐 Click to restore <strong>${needs.length}</strong> saved folder(s)`;
+    
+    banner.addEventListener('click', async () => { 
+      for (const d of needs) { 
+        try { 
+          if (await d.handle.requestPermission({ mode: 'read' }) === 'granted') { 
+            d.needsGrant = false; 
+            await loadHandleIntoSession(d.handle, d.name); 
+          } 
+        } catch(e) {
+          console.warn("Permission denied", e);
+        } 
+      } 
+      mergeSessionIntoLibrary(); 
+      renderSavedHandlesBanner(); 
+      loadSources(); 
+    });
+    
+    libEl.parentElement.insertBefore(banner, libEl);
+  }
+
+  function addSessionFiles(fileList) {
+    const files = Array.from(fileList).filter(f => AUDIO_EXTS_RE.test(f.name)); 
+    if (!files.length) return 0;
+    
+    files.forEach(file => { 
+      sessionTracks.push({ 
+        id: 'session:' + (sessionCounter++), 
+        name: file.name.replace(/\.[^.]+$/, ''), 
+        folder: (file.webkitRelativePath ? file.webkitRelativePath.split('/').slice(0, -1).join(' / ') : 'Session') || 'Session', 
+        blobUrl: URL.createObjectURL(file), 
+        file 
+      }); 
+    });
+    
+    mergeSessionIntoLibrary(); 
+    return files.length;
+  }
+
+  function mergeSessionIntoLibrary() { 
+    playlist = sessionTracks.map(t => t.id); 
+    renderLibraryMixed(sessionTracks); 
+  }
+
+  const sourcesOverlay = document.getElementById('sources-overlay');
+  
+  document.querySelectorAll('.src-tab').forEach(tab => {
+    tab.addEventListener('click', () => { 
+      document.querySelectorAll('.src-tab').forEach(t => t.classList.toggle('active', t === tab)); 
+      document.querySelectorAll('.src-pane').forEach(p => p.classList.toggle('visible', p.id === tab.dataset.pane)); 
+      if (tab.dataset.pane === 'pane-current') {
+        loadSources(); 
+      }
+    });
+  });
+
+  document.getElementById('btn-manage-sources').addEventListener('click', () => { 
+    sourcesOverlay.classList.add('open'); 
+    loadSources(); 
+  }); 
+  
+  document.getElementById('btn-sources-close').addEventListener('click', () => {
+    sourcesOverlay.classList.remove('open');
+  }); 
+  
+  sourcesOverlay.addEventListener('click', e => { 
+    if (e.target === sourcesOverlay) sourcesOverlay.classList.remove('open'); 
+  });
+
+  const dropZone = document.getElementById('drop-zone');
+  const folderPicker = document.getElementById('folder-picker');
+  const dropProgress = document.getElementById('drop-progress');
+  const hasFSAPI = window.isSecureContext && typeof window.showDirectoryPicker === 'function';
+  
+  if (hasFSAPI) { 
+    folderPicker.style.display = 'none'; 
+    dropZone.querySelector('.drop-sub').innerHTML = 'Folder is <strong>remembered across sessions</strong> (Chrome/Edge/Opera).<br><span style="color:var(--muted)">Safari/Firefox: drag-and-drop works but won\'t persist.</span>'; 
+  } else { 
+    dropZone.querySelector('.drop-sub').innerHTML = window.isSecureContext ? '<span style="color:var(--danger)">⚠ Saving disabled: Unsupported Browser.</span><br><span style="color:var(--muted)">Firefox and Safari block persistent access. Use Chrome for full features.</span>' : '<span style="color:var(--danger)">⚠ Saving disabled: Insecure context.</span><br><span style="color:var(--muted)">Host on HTTPS to enable automatic folder saving.</span>'; 
+  }
+
+  dropZone.addEventListener('click', async e => { 
+    if (e.target === folderPicker) return; 
+    
+    if (hasFSAPI) { 
+      try { 
+        const handle = await window.showDirectoryPicker({ mode: 'read' }); 
+        dropProgress.textContent = 'Scanning…'; 
+        const n = await loadHandleIntoSession(handle, handle.name); 
+        
+        if (!dirHandles.find(d => d.name === handle.name)) { 
+          dirHandles.push({ handle, name: handle.name }); 
+          try { 
+            await idbSaveHandle(handle.name, handle); 
+          } catch(dbErr) { 
+            return; 
+          } 
+        } 
+        
+        mergeSessionIntoLibrary(); 
+        dropProgress.textContent = `✓ ${n} tracks — remembered`; 
+        
+        setTimeout(() => {
+          sourcesOverlay.classList.remove('open');
+        }, 1400); 
+      } catch (err) {
+        console.warn("Picker cancelled");
+      } 
+    } else {
+      folderPicker.click(); 
+    }
+  });
+
+  folderPicker.addEventListener('change', () => { 
+    if (addSessionFiles(folderPicker.files)) { 
+      dropProgress.textContent = `✓ Loaded (session only)`; 
+      setTimeout(() => {
+        sourcesOverlay.classList.remove('open');
+      }, 1200); 
+    } 
+  });
+
+  dropZone.addEventListener('dragover', e => { 
+    e.preventDefault(); 
+    dropZone.classList.add('dragover'); 
+  }); 
+
+  dropZone.addEventListener('dragleave', () => {
+    dropZone.classList.remove('dragover');
+  });
+
+  dropZone.addEventListener('drop', async e => {
+    e.preventDefault(); 
+    dropZone.classList.remove('dragover'); 
+    const items = e.dataTransfer.items;
+    
+    if (items && items.length && hasFSAPI) { 
+      for (const item of items) { 
+        if (item.getAsFileSystemHandle) { 
+          try { 
+            const handle = await item.getAsFileSystemHandle(); 
+            if (handle && handle.kind === 'directory') { 
+              dropProgress.textContent = 'Scanning…'; 
+              const n = await loadHandleIntoSession(handle, handle.name); 
+              
+              if (!dirHandles.find(d => d.name === handle.name)) { 
+                dirHandles.push({ handle, name: handle.name }); 
+                await idbSaveHandle(handle.name, handle); 
+              } 
+              
+              mergeSessionIntoLibrary(); 
+              dropProgress.textContent = `✓ ${n} tracks`; 
+              
+              setTimeout(() => {
+                sourcesOverlay.classList.remove('open');
+              }, 1400); 
+              return; 
+            } 
+          } catch (err) {
+            console.warn("Handle error", err);
+          } 
+        } 
+      } 
+    }
+    
+    const allFiles2 = []; 
+    let pending = 0;
+    
+    function scanEntry(entry, path) { 
+      path = path || ''; 
+      if (entry.isFile) { 
+        pending++; 
+        entry.getFile(file => { 
+          if (AUDIO_EXTS_RE.test(file.name)) { 
+            Object.defineProperty(file, 'webkitRelativePath', { value: path + file.name }); 
+            allFiles2.push(file); 
+          } 
+          pending--; 
+          if (pending === 0) finish(); 
+        }); 
+      } else if (entry.isDirectory) { 
+        const reader = entry.createReader(); 
+        const readAll = () => reader.readEntries(entries => { 
+          if (!entries.length) return; 
+          entries.forEach(e2 => scanEntry(e2, path + entry.name + '/')); 
+          readAll(); 
+        }); 
+        readAll(); 
+      } 
+    }
+    
+    if (items && items.length) { 
+      for (const item of items) { 
+        const entry = item.webkitGetAsEntry ? item.webkitGetAsEntry() : null; 
+        if (entry) {
+          scanEntry(entry); 
+        } else if (item.kind === 'file') {
+          allFiles2.push(item.getAsFile()); 
+        }
+      } 
+      if (pending === 0) finish(); 
+    }
+    
+    function finish() { 
+      if (!allFiles2.length) return; 
+      const dt = new DataTransfer(); 
+      allFiles2.forEach(f => dt.items.add(f)); 
+      if (addSessionFiles(dt.files)) { 
+        dropProgress.textContent = `✓ Loaded`; 
+        setTimeout(() => {
+          sourcesOverlay.classList.remove('open');
+        }, 1200); 
+      } 
+    }
+  });
+
+  function loadSources() {
+    const listEl = document.getElementById('sources-list'); 
+    let html = '';
+    
+    dirHandles.forEach(d => {
+      let trackCount = sessionTracks.filter(t => t.dirName === d.name).length;
+      html += `
+        <div class="source-row session">
+          <div class="source-icon">📂</div>
+          <div class="source-info">
+            <div class="source-path">${d.name}</div>
+            <div class="source-count">${d.needsGrant ? '🔐 click to restore' : trackCount + ' tracks'}</div>
+          </div>
+          <button class="source-remove" data-name="${d.name}">✕</button>
+        </div>
+      `;
+    });
+    
+    if (!html) { 
+      listEl.innerHTML = '<div class="source-empty">No sources yet.</div>'; 
+      return; 
+    } 
+    
+    listEl.innerHTML = html;
+    
+    listEl.querySelectorAll('.source-remove').forEach(btn => {
+      btn.addEventListener('click', async () => { 
+        const name = btn.dataset.name; 
+        sessionTracks.filter(t => t.dirName === name).forEach(t => URL.revokeObjectURL(t.blobUrl)); 
+        sessionTracks = sessionTracks.filter(t => t.dirName !== name); 
+        dirHandles = dirHandles.filter(d => d.name !== name); 
+        
+        await idbDeleteHandle(name); 
+        mergeSessionIntoLibrary(); 
+        renderSavedHandlesBanner(); 
+        loadSources(); 
+      });
+    });
+  }
+
+  function readLocalMetadata(file) {
+    if (!window.jsmediatags) return;
+    jsmediatags.read(file, {
+      onSuccess: function(tag) {
+        if (tag.tags.title) {
+          document.getElementById('np-title').textContent = tag.tags.title;
+        }
+        if (tag.tags.artist) {
+          document.getElementById('np-folder').textContent = `${tag.tags.artist}${tag.tags.album ? ' — ' + tag.tags.album : ''}`;
+        }
+        
+        const artEl = document.getElementById('now-playing-art');
+        const fallback = document.getElementById('art-fallback');
+        
+        if (tag.tags.picture) {
+          let base64String = ""; 
+          for (let i = 0; i < tag.tags.picture.data.length; i++) {
+            base64String += String.fromCharCode(tag.tags.picture.data[i]);
+          }
+          artEl.src = `data:${tag.tags.picture.format};base64,${window.btoa(base64String)}`; 
+          artEl.style.display = 'block'; 
+          fallback.style.display = 'none';
+        } else { 
+          artEl.style.display = 'none'; 
+          fallback.style.display = 'block'; 
+        }
+      },
+      onError: function() { 
+        document.getElementById('now-playing-art').style.display = 'none'; 
+        document.getElementById('art-fallback').style.display = 'block'; 
+      }
+    });
+  }
+
+  // ── Playback & Transport ───────────────────────────────────────
+  function playTrack(path) {
+    ensureCtx(); 
+    if (audioCtx.state === 'suspended') {
+      audioCtx.resume();
+    }
+    
+    const session = sessionTracks.find(t => t.id === path);
+    if (session) {
+      audioEl.src = session.blobUrl; 
+      document.getElementById('np-title').textContent = session.name; 
+      document.getElementById('np-folder').textContent = '⚡ ' + session.folder;
+      
+      document.getElementById('now-playing-art').style.display = 'none'; 
+      document.getElementById('art-fallback').style.display = 'block';
+      
+      if (session.file) {
+        readLocalMetadata(session.file);
+      }
+      
+      audioEl.play(); 
+      document.getElementById('btn-play').textContent = '⏸'; 
+      updateAudioGraph(); 
+      highlightCurrent();
+    }
+  }
+
+  function togglePlay() { 
+    ensureCtx(); 
+    if (audioCtx.state === 'suspended') {
+      audioCtx.resume(); 
+    }
+    
+    if (audioEl.paused) { 
+      if (!audioEl.src) { 
+        if (playlist.length) { 
+          currentIdx = 0; 
+          playTrack(playlist[0]); 
+        } 
+        return; 
+      } 
+      audioEl.play(); 
+      document.getElementById('btn-play').textContent = '⏸'; 
+    } else { 
+      audioEl.pause(); 
+      document.getElementById('btn-play').textContent = '▶'; 
+    } 
+  }
+
+  function playNext() { 
+    if (playlist.length === 0) return; 
+    if (repeatMode === 2) { 
+      audioEl.currentTime = 0; 
+      audioEl.play(); 
+      return; 
+    } 
+    currentIdx = shuffle ? Math.floor(Math.random() * playlist.length) : (currentIdx + 1) % playlist.length; 
+    playTrack(playlist[currentIdx]); 
+  }
+
+  function playPrev() { 
+    if (playlist.length === 0) return; 
+    if (audioEl.currentTime > 3) { 
+      audioEl.currentTime = 0; 
+      return; 
+    } 
+    currentIdx = (currentIdx - 1 + playlist.length) % playlist.length; 
+    playTrack(playlist[currentIdx]); 
+  }
+
+  function fmt(s) { 
+    s = Math.floor(s || 0); 
+    return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); 
+  }
+
+  const seekSlider = document.getElementById('seek-slider'); 
+  let isDraggingSeek = false;
+  
+  function updateSliderFill(el, color) { 
+    let percent = (el.value / el.max) * 100;
+    el.style.background = `linear-gradient(to right, ${color} ${percent}%, var(--bg4) ${percent}%)`; 
+  }
+  
+  seekSlider.addEventListener('input', () => { 
+    isDraggingSeek = true; 
+    updateSliderFill(seekSlider, 'var(--btn-invert-bg)'); 
+    if (audioEl.duration && isFinite(audioEl.duration)) {
+      document.getElementById('time-cur').textContent = fmt((seekSlider.value / 1000) * audioEl.duration); 
+    }
+  });
+
+  seekSlider.addEventListener('change', () => { 
+    if (audioEl.duration && isFinite(audioEl.duration)) {
+      audioEl.currentTime = (seekSlider.value / 1000) * audioEl.duration; 
+    }
+    isDraggingSeek = false; 
+  });
+
+  audioEl.addEventListener('timeupdate', () => { 
+    if (!isDraggingSeek && audioEl.duration && isFinite(audioEl.duration)) { 
+      seekSlider.value = (audioEl.currentTime / audioEl.duration) * 1000; 
+      updateSliderFill(seekSlider, 'var(--btn-invert-bg)'); 
+      document.getElementById('time-cur').textContent = fmt(audioEl.currentTime); 
+      document.getElementById('time-tot').textContent = fmt(audioEl.duration); 
+    } 
+  });
+
+  audioEl.addEventListener('ended', () => { 
+    if (repeatMode === 2) { 
+      audioEl.play(); 
+      return; 
+    } 
+    if (repeatMode === 1 || currentIdx < playlist.length - 1 || shuffle) {
+      playNext(); 
+    } else {
+      document.getElementById('btn-play').textContent = '▶'; 
+    }
+  });
+
+  audioEl.addEventListener('play', () => {
+    document.getElementById('btn-play').textContent = '⏸';
+  }); 
+  
+  audioEl.addEventListener('pause', () => {
+    document.getElementById('btn-play').textContent = '▶';
+  });
+
+  const volSlider = document.getElementById('vol-slider');
+  
+  volSlider.addEventListener('input', e => { 
+    let val = parseFloat(e.target.value);
+    if (makeupNode) {
+      makeupNode.gain.value = val; 
+    } else {
+      audioEl.volume = Math.min(1, val); 
+    }
+    updateSliderFill(volSlider, 'var(--text)'); 
+  });
+
+  updateSliderFill(volSlider, 'var(--text)');
+
+  document.getElementById('btn-play').addEventListener('click', togglePlay); 
+  document.getElementById('btn-prev').addEventListener('click', playPrev); 
+  document.getElementById('btn-next').addEventListener('click', playNext);
+  
+  document.getElementById('btn-shuffle').addEventListener('click', function() { 
+    shuffle = !shuffle; 
+    this.classList.toggle('active', shuffle); 
+  });
+
+  document.getElementById('btn-repeat').addEventListener('click', function() { 
+    repeatMode = (repeatMode + 1) % 3; 
+    this.classList.toggle('active', repeatMode > 0); 
+    this.textContent = repeatMode === 2 ? '↻¹' : '↻'; 
+  });
+
+  document.getElementById('search').addEventListener('input', function() { 
+    const q = this.value.toLowerCase().trim(); 
+    renderLibraryMixed(q ? sessionTracks.filter(f => f.name.toLowerCase().includes(q)) : sessionTracks); 
+  });
+
+  // ── Table View ────────────────────────────────────────────────
+  function renderTable() {
+    const tbody = document.getElementById('peq-tbody'); 
+    if (!tbody) return; 
+    tbody.innerHTML = '';
+    
+    bands.forEach(band => {
+      const tr = document.createElement('tr'); 
+      tr.className = 'peq-row' + (band.id === selectedBandId ? ' selected-row' : ''); 
+      tr.dataset.id = band.id;
+      
+      let isPos = band.gain > 0.05 ? 'gain-pos' : band.gain < -0.05 ? 'gain-neg' : '';
+      
+      tr.innerHTML = `
+        <td><input type="checkbox" class="tbl-enabled" ${band.enabled ? 'checked' : ''} data-id="${band.id}"></td>
+        <td>
+          <select class="tbl-type" data-id="${band.id}">
+            <option value="PK" ${band.type === 'PK' ? 'selected' : ''}>PK</option>
+            <option value="LSQ" ${band.type === 'LSQ' ? 'selected' : ''}>LSQ</option>
+            <option value="HSQ" ${band.type === 'HSQ' ? 'selected' : ''}>HSQ</option>
+          </select>
+        </td>
+        <td><input class="tbl-input" type="number" step="1" min="20" max="20000" data-field="freq" data-id="${band.id}" value="${Math.round(band.freq)}"></td>
+        <td><input class="tbl-input ${isPos}" type="number" step="0.1" min="-20" max="20" data-field="gain" data-id="${band.id}" value="${band.gain.toFixed(1)}"></td>
+        <td><input class="tbl-input" type="number" step="0.01" min="0.1" max="10" data-field="q" data-id="${band.id}" value="${band.q.toFixed(2)}"></td>
+        <td><button class="tbl-del" data-id="${band.id}">✕</button></td>
+      `;
+      
+      tr.addEventListener('mousedown', e => { 
+        if (e.target.tagName === 'BUTTON' || e.target.tagName === 'SELECT') return; 
+        selectedBandId = band.id; 
+        document.querySelectorAll('.peq-row').forEach(r => {
+          r.classList.toggle('selected-row', parseInt(r.dataset.id) === selectedBandId);
+        }); 
+        drawCurve(); 
+        renderBandStrip(); 
+      });
+
+      tr.querySelectorAll('.tbl-input').forEach(inp => {
+        let lastVal = inp.value; 
+        const commit = () => { 
+          if (inp.value === lastVal) return; 
+          lastVal = inp.value; 
+          const b = bands.find(x => x.id === parseInt(inp.dataset.id)); 
+          if (!b) return; 
+          
+          let val = parseFloat(inp.value); 
+          if (isNaN(val)) { 
+            inp.value = lastVal; 
+            return; 
+          } 
+          
+          const field = inp.dataset.field; 
+          if (field === 'freq') val = Math.max(20, Math.min(20000, Math.round(val))); 
+          if (field === 'gain') val = Math.max(-20, Math.min(20, Math.round(val * 10) / 10)); 
+          if (field === 'q') val = Math.max(0.1, Math.min(10, Math.round(val * 100) / 100)); 
+          
+          b[field] = val; 
+          selectedBandId = b.id; 
+          
+          if (field === 'gain') {
+            inp.className = 'tbl-input ' + (val > 0.05 ? 'gain-pos' : val < -0.05 ? 'gain-neg' : '');
+          }
+          syncEQ(); 
+        };
+        
+        inp.addEventListener('input', commit); 
+        inp.addEventListener('change', commit); 
+        inp.addEventListener('keydown', e => { 
+          if (e.key === 'Enter') inp.blur(); 
+        });
+      });
+
+      tr.querySelector('.tbl-type').addEventListener('change', e => { 
+        const b = bands.find(x => x.id === parseInt(e.target.dataset.id)); 
+        if (b) { 
+          b.type = e.target.value; 
+          selectedBandId = b.id; 
+          syncEQ(); 
+        } 
+      }); 
+
+      tr.querySelector('.tbl-enabled').addEventListener('change', e => { 
+        const b = bands.find(x => x.id === parseInt(e.target.dataset.id)); 
+        if (b) { 
+          b.enabled = e.target.checked; 
+          syncEQ(); 
+        } 
+      }); 
+
+      tr.querySelector('.tbl-del').addEventListener('click', () => { 
+        bands = bands.filter(x => x.id !== band.id); 
+        if (selectedBandId === band.id) {
+          selectedBandId = bands.length ? bands[bands.length - 1].id : null; 
+        }
+        syncEQ(); 
+        tr.remove(); 
+      });
+
+      tbody.appendChild(tr);
+    });
+  }
+
+  function updateTableValues() { 
+    const tbody = document.getElementById('peq-tbody'); 
+    if (!tbody) return; 
+    
+    const rows = tbody.querySelectorAll('tr.peq-row'); 
+    if (rows.length !== bands.length) { 
+      renderTable(); 
+      return; 
+    } 
+    
+    rows.forEach((tr, i) => { 
+      const band = bands[i]; 
+      if (!band || parseInt(tr.dataset.id) !== band.id) { 
+        renderTable(); 
+        return; 
+      } 
+      
+      tr.classList.toggle('selected-row', band.id === selectedBandId); 
+      
+      tr.querySelectorAll('.tbl-input').forEach(inp => { 
+        if (document.activeElement === inp) return; 
+        
+        const field = inp.dataset.field; 
+        const newVal = field === 'freq' ? String(Math.round(band.freq)) : field === 'gain' ? band.gain.toFixed(1) : band.q.toFixed(2); 
+        
+        if (inp.value !== newVal) {
+          inp.value = newVal; 
+        }
+        
+        if (field === 'gain') {
+          inp.className = 'tbl-input ' + (band.gain > 0.05 ? 'gain-pos' : band.gain < -0.05 ? 'gain-neg' : ''); 
+        }
+      }); 
+      
+      const sel = tr.querySelector('.tbl-type'); 
+      if (sel && sel.value !== band.type) {
+        sel.value = band.type; 
+      }
+      
+      const cb = tr.querySelector('.tbl-enabled'); 
+      if (cb && cb.checked !== band.enabled) {
+        cb.checked = band.enabled; 
+      }
+    }); 
+  }
+
+  // ── Simple / Tube Sliders ──────────────────────────────────────
+  const SIMPLE_BANDS = [
+    { id: 'subbass', label: 'Sub Bass', hz: '40-60 Hz', freq: 50, q: 0.7, type: 'PK' }, 
+    { id: 'bass', label: 'Bass', hz: '100-150 Hz', freq: 120, q: 1.0, type: 'PK' }, 
+    { id: 'warmth', label: 'Warmth', hz: '200-300 Hz', freq: 250, q: 1.0, type: 'PK' }, 
+    { id: 'mids', label: 'Mids', hz: '800-1k Hz', freq: 900, q: 0.8, type: 'PK' }, 
+    { id: 'presence', label: 'Presence', hz: '3-5 kHz', freq: 4000, q: 1.2, type: 'PK' }, 
+    { id: 'treble', label: 'Treble', hz: '8-10 kHz', freq: 9000, q: 1.0, type: 'PK' }, 
+    { id: 'air', label: 'Air', hz: '14-16 kHz', freq: 15000, q: 1.0, type: 'HSQ' }
+  ];
+  
+  const simpleContainer = document.getElementById('simple-sliders-container');
+  
+  SIMPLE_BANDS.forEach(def => {
+    simpleContainer.innerHTML += `
+      <div class="slider-band">
+        <div class="slider-band-label">
+          <div class="slider-band-name">${def.label}</div>
+          <div class="slider-band-hz">${def.hz}</div>
+        </div>
+        <input class="simple-slider" type="range" id="ss-${def.id}" min="-12" max="12" step="0.5" value="0">
+        <div class="simple-slider-val" id="sv-${def.id}">0.0 dB</div>
+      </div>
+    `;
+  });
+
+  function getSimpleBand(sid) { 
+    return bands.find(b => b.__simpleId === sid); 
+  }
+
+  function updateSimpleSliders() { 
+    SIMPLE_BANDS.forEach(def => { 
+      const slider = document.getElementById('ss-' + def.id); 
+      const valEl = document.getElementById('sv-' + def.id); 
+      
+      if (!slider || !valEl) return; 
+      
+      const b = getSimpleBand(def.id); 
+      const gain = b ? b.gain : 0; 
+      
+      if (parseFloat(slider.value) !== gain) {
+        slider.value = gain; 
+      }
+      
+      valEl.textContent = (gain >= 0 ? '+' : '') + gain.toFixed(1) + ' dB'; 
+      valEl.className = 'simple-slider-val' + (gain > 0 ? ' pos' : gain < 0 ? ' neg' : ''); 
+      
+      const val = ((gain + 12) / 24) * 100; 
+      slider.style.background = `linear-gradient(to right, var(--accent2) ${val}%, var(--bg4) ${val}%)`; 
+    }); 
+  }
+
+  SIMPLE_BANDS.forEach(def => {
+    const slider = document.getElementById('ss-' + def.id);
+    const valEl = document.getElementById('sv-' + def.id); 
+    
+    if (!slider) return;
+    
+    slider.addEventListener('input', () => {
+      const gain = parseFloat(slider.value); 
+      valEl.textContent = (gain >= 0 ? '+' : '') + gain.toFixed(1) + ' dB'; 
+      valEl.className = 'simple-slider-val' + (gain > 0 ? ' pos' : gain < 0 ? ' neg' : '');
+      
+      let percent = ((gain + 12) / 24) * 100;
+      slider.style.background = `linear-gradient(to right, var(--accent2) ${percent}%, var(--bg4) ${percent}%)`;
+      
+      if (gain === 0) { 
+        const b = getSimpleBand(def.id); 
+        if (b) bands = bands.filter(x => x !== b); 
+      } else { 
+        let b = getSimpleBand(def.id); 
+        if(!b) { 
+          b = { 
+            id: nextBandId++, 
+            type: def.type, 
+            freq: def.freq, 
+            gain: 0, 
+            q: def.q, 
+            enabled: true, 
+            __simpleId: def.id 
+          }; 
+          bands.push(b); 
+        } 
+        b.gain = gain; 
+      } 
       syncEQ();
+    });
+  });
+
+  // RESTORED: Simple View Reset All Button
+  document.getElementById('btn-simple-reset').addEventListener('click', () => {
+    SIMPLE_BANDS.forEach(def => {
+      const slider = document.getElementById('ss-' + def.id);
+      const valEl = document.getElementById('sv-' + def.id);
+      
+      if (slider) {
+        slider.value = 0;
+        slider.style.background = 'var(--bg4)';
+      }
+      if (valEl) {
+        valEl.textContent = '0.0 dB';
+        valEl.className = 'simple-slider-val';
+      }
+    });
+    
+    bands = bands.filter(b => !b.__simpleId);
+    syncEQ();
+  });
+
+  document.getElementById('ss-tube').addEventListener('input', e => { 
+    tubeDrive = parseFloat(e.target.value); 
+    document.getElementById('sv-tube').textContent = tubeDrive + '%'; 
+    e.target.style.background = `linear-gradient(to right, #f9a8a8 ${tubeDrive}%, var(--bg4) ${tubeDrive}%)`; 
+    updateAudioGraph(); 
+  });
+
+  // ── Shortcuts ────────────────────────────────────────────────
+  document.addEventListener('keydown', e => {
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') {
+      return;
+    }
+    
+    if (e.code === 'Space') { 
+      e.preventDefault(); 
+      togglePlay(); 
+    }
+    
+    if (e.code === 'ArrowRight') { 
+      if(audioEl.duration) {
+        audioEl.currentTime = Math.min(audioEl.duration, audioEl.currentTime + 10); 
+      }
+    }
+    
+    if (e.code === 'ArrowLeft') { 
+      if(audioEl.duration) {
+        audioEl.currentTime = Math.max(0, audioEl.currentTime - 10); 
+      }
+    }
+    
+    if (e.code === 'ArrowUp') { 
+      volSlider.value = Math.min(1.5, parseFloat(volSlider.value) + 0.05); 
+      if (makeupNode) {
+        makeupNode.gain.value = parseFloat(volSlider.value); 
+      }
+      updateSliderFill(volSlider, 'var(--text)'); 
+    }
+    
+    if (e.code === 'ArrowDown') { 
+      volSlider.value = Math.max(0, parseFloat(volSlider.value) - 0.05); 
+      if (makeupNode) {
+        makeupNode.gain.value = parseFloat(volSlider.value); 
+      }
+      updateSliderFill(volSlider, 'var(--text)'); 
+    }
+    
+    if ((e.code === 'Backspace' || e.code === 'Delete') && selectedBandId !== null) { 
+      bands = bands.filter(b => b.id !== selectedBandId); 
+      selectedBandId = bands.length ? bands[bands.length - 1].id : null; 
+      syncEQ(); 
     }
   });
 
   new ResizeObserver(resizeCanvas).observe(document.getElementById('eq-canvas-wrap'));
-
-  // ── Boot ──────────────────────────────────────────────────────
-  resizeCanvas();
-  loadLibrary();
+  
+  updateSimpleSliders(); 
+  document.getElementById('ss-tube').style.background = `linear-gradient(to right, #f9a8a8 0%, var(--bg4) 0%)`;
+  
+  resizeCanvas(); 
+  loadLibrary(); 
   restorePersistedHandles(); 
+  
 })();
 </script>
 </body>
