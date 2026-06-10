@@ -319,7 +319,7 @@
   }
 
   #eq-enabled { 
-    display: none; 
+    /* display: none;  */
   } 
 
   .eq-dot { 

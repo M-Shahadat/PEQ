@@ -1564,7 +1564,7 @@ Equalizer = (function() {
   // ── Simple / Tube Sliders ──────────────────────────────────────
   const SIMPLE_BANDS = [
     { id: 'subbass', label: 'Sub Bass', hz: '40-60 Hz', freq: 50, q: 0.7, type: 'PK' }, 
-    { id: 'bass', label: 'Bass', hz: '100-150 Hz', freq: 120, q: 1.0, type: 'PK' }, 
+    { id: 'bass', label: 'Bass', hz: '100-150 Hz', freq: 120, q: 1.0, type: 'PK' },
     { id: 'warmth', label: 'Warmth', hz: '200-300 Hz', freq: 250, q: 1.0, type: 'PK' }, 
     { id: 'mids', label: 'Mids', hz: '800-1k Hz', freq: 900, q: 0.8, type: 'PK' }, 
     { id: 'presence', label: 'Presence', hz: '3-5 kHz', freq: 4000, q: 1.2, type: 'PK' }, 
