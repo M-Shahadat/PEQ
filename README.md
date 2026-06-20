@@ -4,3 +4,8 @@ A client-side, privacy-first local music player with an Parametric EQ and AutoEQ
 - Upload folders of audio you have, EQ directly on the browser, use it like Spotify or soundcloud but with a PEQ.
 - Loads metadata of uploaded music
 - Allows importing EQ from anywhere (e.g hangout.audio, peqdb.com)
+- Use automatic equalization based on headphone frequency responses
+- Tweak EQ in real-time while listening
+- Save and load EQ profiles
+
+
