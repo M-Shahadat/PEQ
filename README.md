@@ -1,11 +1,11 @@
-# PEQ
-A client-side, privacy-first local music player with an Parametric EQ and AutoEQ database integration. Persists user uploaded music using File System Access API and IndexedDB. Runs fully on the browser. Like Squig.link but as a music player and more user friendly with 3 EQ modes. 
-# Features
-- Upload folders of audio you have, EQ directly on the browser, use it like Spotify or soundcloud but with a PEQ.
-- Loads metadata of uploaded music
-- Allows importing EQ from anywhere (e.g hangout.audio, peqdb.com)
-- Use automatic equalization based on headphone frequency responses
-- Tweak EQ in real-time while listening
-- Save and load EQ profiles
+# PEQ Music Player
+A client-side, privacy-first local music player with Parametric EQ (PEQ) with AutoEQ database integration. Persists uploaded music using File System Access API and IndexedDB. Runs fully in the browser.
 
+Like Squig.link, but as a music player — more user-friendly with 3 EQ modes.
 
+## Features
+- **Upload audio folders** — EQ directly in the browser. Use it like Spotify or SoundCloud, but with PEQ
+- **Auto-load metadata** — Displays track info for all uploaded music
+- **Import EQ from anywhere** — Supports hangout.audio, peqdb.com, and anywhere that gives you an EQ import
+- **Real-time EQ tweaking** — Adjust filters while listening
+   **Save/load EQ profiles** — Store imported configurations
